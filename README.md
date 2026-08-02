@@ -1,4 +1,4 @@
-# TicketForge
+# Lenovo E-Ticket Automation System for Hardware Support Management
 
 > Python + Selenium automation tool for Lenovo support ticketing — single and bulk ticket creation, auto Excel logging with case IDs and statuses, and open/closed case monitoring.
 
