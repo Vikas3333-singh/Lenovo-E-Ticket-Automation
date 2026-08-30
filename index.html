@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vikas Singh | Senior IT Systems Specialist — EUC, IAM & Automation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08101d;
+      --surface: #101a2c;
+      --surface-2: #162238;
+      --panel: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #edf2fb;
+      --muted: #98a7c5;
+      --accent: #53d1c8;
+      --accent-2: #8ef3eb;
+      --shadow: 0 24px 80px rgba(0,0,0,0.32);
+      --radius-lg: 28px;
+      --radius-md: 20px;
+      --radius-sm: 14px;
+      --container: 1160px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Inter", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(83,209,200,0.12), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(83,209,200,0.05), transparent 30%),
+        linear-gradient(180deg, #07101d 0%, #091321 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .container {
+      width: min(100% - 32px, var(--container));
+      margin: 0 auto;
+    }
+
+    /* ── NAV ── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(8,16,29,0.78);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      gap: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(83,209,200,0.18), rgba(83,209,200,0.04));
+      border: 1px solid rgba(83,209,200,0.2);
+      color: var(--accent-2);
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      font-weight: 600;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-cta:hover { border-color: rgba(83,209,200,0.3); color: var(--accent-2); }
+
+    /* ── SHARED CARD STYLES ── */
+    .hero-copy, .hero-card, .section-card, .project-card, .contact-card, .exp-card {
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .hero-copy::before, .project-card::before, .hero-card::before,
+    .section-card::before, .contact-card::before, .exp-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent 42%);
+    }
+
+    /* ── EYEBROW / LABELS ── */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(83,209,200,0.18);
+      background: rgba(83,209,200,0.09);
+      color: var(--accent-2);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .section-label, .highlight-label, .hero-card__label {
+      display: inline-block;
+      margin-bottom: 12px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, h4 { margin: 0; line-height: 1.08; }
+
+    /* ── HERO ── */
+    .hero { padding: 88px 0 56px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .hero-copy {
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero h1 {
+      margin-top: 20px;
+      font-size: clamp(2.6rem, 6.5vw, 5.2rem);
+      letter-spacing: -0.05em;
+    }
+    .hero h1 span { color: var(--accent-2); }
+    .hero-tagline {
+      margin-top: 8px;
+      font-size: 1rem;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .hero-lead {
+      margin: 18px 0 0;
+      max-width: 62ch;
+      color: #d7e2f5;
+      font-size: 1.05rem;
+      line-height: 1.9;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: var(--accent); color: #072826; }
+    .btn-primary:hover { background: #80ece4; }
+    .btn-secondary {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: rgba(83,209,200,0.3); color: var(--accent-2); }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .meta-chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* Hero sidebar card */
+    .hero-card {
+      position: relative;
+      padding: 28px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .hero-card h3 { font-size: 1.5rem; margin-bottom: 10px; }
+    .hero-card p { margin: 0 0 22px; color: var(--muted); font-size: 0.97rem; }
+    .metric-list { display: grid; gap: 14px; }
+    .metric {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+    .metric strong { display: block; margin-bottom: 4px; font-size: 0.98rem; }
+    .metric span { color: var(--muted); font-size: 0.92rem; }
+
+    /* ── SECTIONS ── */
+    section { padding: 28px 0; }
+    .section-heading { max-width: 760px; margin-bottom: 28px; }
+    .section-heading h2 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+    .section-heading p { margin: 0; color: var(--muted); font-size: 1.02rem; }
+
+    /* ── EXPERIENCE ── */
+    .exp-timeline { display: grid; gap: 18px; }
+    .exp-card {
+      position: relative;
+      padding: 28px 32px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+    }
+    .exp-left {}
+    .exp-role {
+      font-size: 1.18rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .exp-company {
+      font-size: 1rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .exp-bullets {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+    .exp-bullets li { color: var(--muted); font-size: 0.97rem; }
+    .exp-bullets li strong { color: var(--text); }
+    .exp-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .exp-period {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    .exp-location {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .exp-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .exp-tag {
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(83,209,200,0.08);
+      border: 1px solid rgba(83,209,200,0.14);
+      color: #ddfbf8;
+      font-size: 0.82rem;
+    }
+
+    /* ── DOMAIN GRID ── */
+    .services-grid, .about-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .section-card {
+      position: relative;
+      padding: 26px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .section-card h3 { font-size: 1.15rem; margin-bottom: 10px; }
+    .section-card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* ── PROJECT CARD ── */
+    .project-card {
+      position: relative;
+      overflow: hidden;
+      padding: 36px;
+      border-radius: var(--radius-lg);
+    }
+    .project-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .project-badge {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(83,209,200,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(83,209,200,0.14);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .project-top h3 {
+      font-size: clamp(1.9rem, 3vw, 2.7rem);
+      margin-bottom: 8px;
+    }
+    .project-subtitle { margin: 0; color: var(--muted); font-size: 1rem; }
+    .project-type {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .project-lead {
+      max-width: 900px;
+      margin: 0 0 24px;
+      color: #d7e2f5;
+      font-size: 1.04rem;
+      line-height: 1.85;
+    }
+    .highlight-grid, .details-grid { display: grid; gap: 18px; }
+    .highlight-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 20px;
+    }
+    .details-grid { grid-template-columns: 1.2fr 0.8fr; }
+    .highlight-card, .detail-card {
+      padding: 22px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+    .highlight-card p, .detail-card p, .detail-card li { color: var(--muted); margin: 0; }
+    .detail-card h4 { margin-bottom: 14px; font-size: 1rem; }
+    .detail-card ul { margin: 0; padding-left: 18px; }
+    .detail-card li + li { margin-top: 10px; }
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tech-tags span {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(83,209,200,0.08);
+      border: 1px solid rgba(83,209,200,0.16);
+      color: #ddfbf8;
+      font-size: 0.9rem;
+    }
+
+    /* ── CONTACT ── */
+    .contact-card {
+      position: relative;
+      overflow: hidden;
+      padding: 36px;
+      border-radius: var(--radius-lg);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+    .contact-card p { margin: 10px 0 0; color: var(--muted); max-width: 58ch; }
+    .contact-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      padding: 24px 0 40px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 980px) {
+      .hero-grid, .highlight-grid, .details-grid,
+      .services-grid, .about-grid { grid-template-columns: 1fr; }
+      .contact-card { grid-template-columns: 1fr; }
+      .exp-card { grid-template-columns: 1fr; }
+      .exp-meta { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+      .project-top { display: grid; }
+      .contact-actions { justify-content: flex-start; }
+      .project-type { white-space: normal; width: fit-content; }
+    }
+    @media (max-width: 760px) {
+      .nav { flex-wrap: wrap; padding: 14px 0; }
+      .nav-links { width: 100%; justify-content: center; flex-wrap: wrap; gap: 16px; }
+      .hero { padding-top: 42px; }
+    }
+    @media (max-width: 640px) {
+      .container { width: min(100% - 20px, var(--container)); }
+      .hero-copy, .hero-card, .project-card, .section-card,
+      .contact-card, .exp-card { padding: 22px; border-radius: 22px; }
+      .btn, .nav-cta { width: 100%; }
+      .hero-actions, .contact-actions { flex-direction: column; }
+      .hero h1 { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a href="#top" class="brand">
+        <span class="brand-mark">VS</span>
+        <span>Vikas Singh</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#experience">Experience</a>
+        <a href="#domains">Domains</a>
+        <a href="#project">Project</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="nav-cta" href="https://github.com/Vikas3333-singh" target="_blank" rel="noopener noreferrer">
+        GitHub Profile
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">EUC · IAM · IT Operations · Automation</span>
+          <h1>Senior IT <span>Systems</span> Specialist</h1>
+          <p class="hero-tagline">Femmella Fashion, Gurgaon &nbsp;·&nbsp; 10+ years in IT Operations</p>
+          <p class="hero-lead">
+            I manage endpoint deployments, identity and access management, and hardware support workflows at scale.
+            Where manual processes create operational drag, I build automation — structured, accountable, and built to run without babysitting.
+          </p>
+          <div class="hero-actions">
+            <a href="#project" class="btn btn-primary">View TicketForge Project</a>
+            <a href="#experience" class="btn btn-secondary">See Experience</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-chip">Python Automation</span>
+            <span class="meta-chip">Identity & Access Management</span>
+            <span class="meta-chip">Endpoint Management (EUC)</span>
+            <span class="meta-chip">Selenium · openpyxl</span>
+            <span class="meta-chip">IT Support Operations</span>
+          </div>
+        </div>
+
+        <aside class="hero-card">
+          <span class="hero-card__label">At a Glance</span>
+          <h3>What I bring</h3>
+          <p>
+            A decade of IT operations experience — from enterprise endpoint rollouts at BCG
+            to building Python automation for hardware support at Femmella.
+          </p>
+          <div class="metric-list">
+            <div class="metric">
+              <strong>10+ years IT Operations</strong>
+              <span>EUC, IAM, system deployment, and support lifecycle management.</span>
+            </div>
+            <div class="metric">
+              <strong>Enterprise background</strong>
+              <span>Previously System Analyst at Boston Consulting Group (BCG).</span>
+            </div>
+            <div class="metric">
+              <strong>Automation that ships</strong>
+              <span>TicketForge eliminated manual Lenovo ticketing for the full support team.</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ═══ EXPERIENCE ═══ -->
+    <section id="experience">
+      <div class="container">
+        <div class="section-heading">
+          <span class="eyebrow">Experience</span>
+          <h2>Where I've worked</h2>
+          <p>10+ years across enterprise consulting and in-house IT — with a consistent focus on reliable operations and practical automation.</p>
+        </div>
+
+        <div class="exp-timeline">
+
+          <article class="exp-card">
+            <div class="exp-left">
+              <div class="exp-role">Senior IT Systems Specialist</div>
+              <div class="exp-company">Femmella Fashion</div>
+              <ul class="exp-bullets">
+                <li>Owns EUC and IAM operations — endpoint deployment, access provisioning, and hardware lifecycle management.</li>
+                <li>Built <strong>TicketForge</strong> — a Python + Selenium automation tool that eliminated manual Lenovo support ticket creation and Excel tracking for the IT team.</li>
+                <li>Manages identity governance: user onboarding/offboarding, role-based access control, and access review processes.</li>
+                <li>Leads system deployment and configuration for new hires and device refresh cycles.</li>
+              </ul>
+              <div class="exp-tags">
+                <span class="exp-tag">EUC</span>
+                <span class="exp-tag">IAM</span>
+                <span class="exp-tag">Python</span>
+                <span class="exp-tag">Selenium</span>
+                <span class="exp-tag">Hardware Lifecycle</span>
+                <span class="exp-tag">System Deployment</span>
+              </div>
+            </div>
+            <div class="exp-meta">
+              <span class="exp-period">Jan 2026 — Present</span>
+              <span class="exp-location">Gurgaon, India</span>
+            </div>
+          </article>
+
+          <article class="exp-card">
+            <div class="exp-left">
+              <div class="exp-role">System Analyst</div>
+              <div class="exp-company">Boston Consulting Group (BCG)</div>
+              <ul class="exp-bullets">
+                <li>Supported IT operations across one of the world's top management consulting firms — high-availability environment with zero-tolerance for downtime.</li>
+                <li>Managed endpoint deployments, system configurations, and access management for a high-headcount, high-mobility workforce.</li>
+                <li>Handled escalations across hardware, software, and connectivity — coordinating with vendors including Lenovo for hardware support cases.</li>
+                <li>Developed operational discipline around structured ticketing, SLA adherence, and incident documentation.</li>
+              </ul>
+              <div class="exp-tags">
+                <span class="exp-tag">IT Operations</span>
+                <span class="exp-tag">System Analysis</span>
+                <span class="exp-tag">Endpoint Management</span>
+                <span class="exp-tag">Vendor Management</span>
+                <span class="exp-tag">Incident Management</span>
+              </div>
+            </div>
+            <div class="exp-meta">
+              <span class="exp-period">Prior Role</span>
+              <span class="exp-location">India</span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DOMAINS ═══ -->
+    <section id="domains">
+      <div class="container">
+        <div class="section-heading">
+          <span class="eyebrow">Core Domains</span>
+          <h2>Where I create value</h2>
+          <p>
+            My work sits at the intersection of endpoint management, identity operations, and support automation — the operational layer that keeps an IT environment running reliably.
+          </p>
+        </div>
+
+        <div class="services-grid">
+          <article class="section-card">
+            <span class="section-label">EUC</span>
+            <h3>End User Computing</h3>
+            <p>
+              Device provisioning, imaging, configuration management, and hardware refresh cycles.
+              Making sure every endpoint is deployment-ready and consistently configured.
+            </p>
+          </article>
+
+          <article class="section-card">
+            <span class="section-label">IAM</span>
+            <h3>Identity & Access Management</h3>
+            <p>
+              User lifecycle management — onboarding, role-based access provisioning, access reviews,
+              and offboarding. Clean identity hygiene across the org.
+            </p>
+          </article>
+
+          <article class="section-card">
+            <span class="section-label">Automation</span>
+            <h3>Support Workflow Automation</h3>
+            <p>
+              Building Python-based automation for repetitive IT support tasks —
+              ticketing, tracking, and status reporting that runs without manual intervention.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PROJECT ═══ -->
+    <section id="project">
+      <div class="container">
+        <div class="section-heading">
+          <span class="eyebrow">Featured Project</span>
+          <h2>Built for real support operations</h2>
+          <p>
+            TicketForge automates the full Lenovo hardware support ticketing lifecycle —
+            from bulk ticket creation to case monitoring — replacing a fully manual process.
+          </p>
+        </div>
+
+        <article class="project-card">
+          <div class="project-top">
+            <div>
+              <span class="project-badge">Open Source · GitHub</span>
+              <h3>TicketForge</h3>
+              <p class="project-subtitle">Lenovo E-Ticket Automation System for Hardware Support Management</p>
+            </div>
+            <span class="project-type">Python · Selenium · openpyxl · Excel Automation</span>
+          </div>
+
+          <p class="project-lead">
+            Engineers were manually logging into the Lenovo portal, filling forms one at a time, then copying case IDs and statuses back into Excel.
+            For bulk hardware issues across multiple devices, this was a significant time sink and a reliable source of copy-paste errors.
+            TicketForge eliminates the full manual cycle — from submission to monitoring — with structured Excel logging at every step.
+          </p>
+
+          <div class="highlight-grid">
+            <div class="highlight-card">
+              <span class="highlight-label">Problem</span>
+              <p>
+                Manual portal form-filling for every Lenovo ticket, followed by manual case ID extraction and Excel updates.
+                Error-prone, time-consuming, and not scalable for bulk device issues.
+              </p>
+            </div>
+            <div class="highlight-card">
+              <span class="highlight-label">Solution</span>
+              <p>
+                Python + Selenium automation handles portal login, form submission, case ID capture, and status updates —
+                driven from an Excel device list, writing all outputs back automatically.
+              </p>
+            </div>
+            <div class="highlight-card">
+              <span class="highlight-label">Impact</span>
+              <p>
+                Manual ticket creation eliminated for single and bulk cases.
+                Zero copy-paste errors in the tracker. IT team has on-demand case visibility without touching the portal.
+              </p>
+            </div>
+          </div>
+
+          <div class="details-grid">
+            <div class="detail-card">
+              <h4>Key features</h4>
+              <ul>
+                <li>Single ticket mode — one device, one command.</li>
+                <li>Bulk ticket mode — reads device list from Excel, creates all tickets in sequence.</li>
+                <li>Auto case ID capture after portal submission, written back to Excel.</li>
+                <li>Status monitoring — checks open/closed/in-progress, updates tracker.</li>
+                <li>Error handling — flags failed submissions with reason for manual review.</li>
+              </ul>
+            </div>
+            <div class="detail-card">
+              <h4>Tech stack</h4>
+              <div class="tech-tags">
+                <span>Python 3.x</span>
+                <span>Selenium WebDriver</span>
+                <span>openpyxl</span>
+                <span>ChromeDriver</span>
+                <span>GeckoDriver</span>
+                <span>Excel Tracker</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-actions" style="margin-top:28px;">
+            <a href="https://github.com/Vikas3333-singh/TicketForge" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+              View on GitHub
+            </a>
+            <a href="https://github.com/Vikas3333-singh/TicketForge#readme-ov-file" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              Read README
+            </a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ CONTACT ═══ -->
+    <section id="contact">
+      <div class="container">
+        <div class="contact-card">
+          <div>
+            <span class="eyebrow">Contact</span>
+            <h2 style="margin-top:16px; font-size:clamp(1.8rem, 4vw, 3rem); letter-spacing:-0.04em;">
+              Let's connect around IT operations and automation
+            </h2>
+            <p>
+              Open to conversations around EUC, IAM, IT support operations, and workflow automation —
+              whether that's roles, collaborations, or just comparing notes.
+            </p>
+          </div>
+          <div class="contact-actions">
+            <a href="mailto:vikas@example.com" class="btn btn-primary">Email Me</a>
+            <a href="https://github.com/Vikas3333-singh" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">GitHub</a>
+            <a href="https://linkedin.com/in/vikas-singh" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      © 2026 Vikas Singh · Senior IT Systems Specialist · EUC, IAM & Automation · Gurgaon, India
+    </div>
+  </footer>
+
+</body>
+</html>
