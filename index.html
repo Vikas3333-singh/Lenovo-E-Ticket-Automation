@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vikas Singh | Endpoint & System Analyst</title>
-  <meta name="description" content=" Portfolio of Vikas Singh - System Analyst, Endpoint Management (EUC/IAM), and Python/PowerShell Automation Engineer." />
+  <meta name="description" content="Portfolio of Vikas Singh - System Analyst, Endpoint Management (EUC/IAM), and Python/PowerShell Automation Engineer." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -452,7 +452,7 @@
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
       font-family: var(--font-mono);
-      font-size: 0.85rem;
+      font-size: 0.84rem;
     }
     .terminal-topbar {
       display: flex;
@@ -483,7 +483,7 @@
       color: #cbd5e1;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 11px;
       line-height: 1.6;
     }
     .t-cmd { color: var(--accent-bright); }
@@ -882,6 +882,13 @@
               </div>
             </div>
             <div class="stat-card">
+              <div class="stat-num">30+</div>
+              <div class="stat-meta">
+                <strong>Lenovo Tickets / Mo.</strong>
+                <span>100% automated via TicketForge engine</span>
+              </div>
+            </div>
+            <div class="stat-card">
               <div class="stat-num">97%</div>
               <div class="stat-meta">
                 <strong>Patch Compliance</strong>
@@ -893,13 +900,6 @@
               <div class="stat-meta">
                 <strong>User Onboarding Turnaround</strong>
                 <span>Cut from 8h using PowerShell automations</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-num">90%</div>
-              <div class="stat-meta">
-                <strong>Audit Effort Eliminated</strong>
-                <span>Asset tracking cut from 4h/wk to 20m</span>
               </div>
             </div>
           </div>
@@ -926,9 +926,9 @@
         <div class="featured-box">
           <div class="featured-header">
             <div class="featured-title">
-              <span class="status-badge" style="margin-bottom:12px;">Open Source Software</span>
-              <h3>TicketForge — Lenovo E-Ticketing Engine</h3>
-              <p>Automated hardware warranty support ticketing and Excel tracking system.</p>
+              <span class="status-badge" style="margin-bottom:12px;">Production Tool · 30+ Tickets / Month</span>
+              <h3>TicketForge — Lenovo E-Ticketing & Status Engine</h3>
+              <p>End-to-end Python & Selenium automation bridging Excel hardware trackers with the Lenovo Service Portal.</p>
             </div>
             <div style="display:flex; gap:12px; flex-wrap:wrap;">
               <a href="https://github.com/Vikas3333-singh/TicketForge" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
@@ -941,29 +941,30 @@
           <div class="project-grid">
             <div class="project-narrative">
               <p class="project-lead">
-                Support engineers historically had to manually log into the Lenovo enterprise portal, fill out 15+ form fields per broken hardware unit, and copy case IDs back into tracking spreadsheets. TicketForge automates the full lifecycle—from batch dispatching to status polling—saving hours every week with zero human copy-paste errors.
+                Managing Lenovo hardware warranty claims for 500+ enterprise laptops previously required tedious manual entry of 15+ portal fields per ticket and repetitive next-day status lookups. <strong>TicketForge</strong> automates the complete lifecycle: bulk-submitting claims directly from an Excel sheet, intelligently handling alternate support locations, extracting confirmation Case IDs, and performing automated daily status checks.
               </p>
 
               <div class="pillars-grid">
                 <div class="pillar-card">
-                  <span>The Problem</span>
-                  <p>Manual portal submission and disjointed Excel tracking created bottlenecks for bulk warranty repairs.</p>
+                  <span>Bulk Ingestion</span>
+                  <p>Reads batch serial numbers, issue logs, and custom dispatch locations straight from Excel.</p>
                 </div>
                 <div class="pillar-card">
-                  <span>The Solution</span>
-                  <p>Headless browser automation via Selenium, reading device queues and writing statuses automatically.</p>
+                  <span>Dynamic Routing</span>
+                  <p>Handles alternate on-site support addresses, fills portal fields, and extracts Case IDs.</p>
                 </div>
                 <div class="pillar-card">
-                  <span>The Outcome</span>
-                  <p>100% automated case submission. Zero tracking errors, complete visibility for the IT team.</p>
+                  <span>Next-Day Sync</span>
+                  <p>Scrapes live portal statuses to update Excel tracker, eliminating manual next-day lookups.</p>
                 </div>
               </div>
 
               <ul class="feature-list">
-                <li><strong>Dual Execution Modes:</strong> Single-device rapid command or full bulk queue execution via Excel.</li>
-                <li><strong>Dynamic Case ID Extraction:</strong> Automatically captures Lenovo ticket numbers and timestamps.</li>
-                <li><strong>Automated Status Sync:</strong> Periodically queries open/in-progress/closed tickets and updates dashboards.</li>
-                <li><strong>Robust Error Handling:</strong> Gracefully retries portal timeouts and flags edge cases for manual review.</li>
+                <li><strong>Bulk Excel Ingestion:</strong> Automatically creates hardware support tickets in bulk directly from the team's Excel tracking sheet.</li>
+                <li><strong>Alternate Support Location Logic:</strong> Intelligently populates alternate on-site dispatch addresses when consultants work remotely or from branch offices.</li>
+                <li><strong>Two-Way Case ID Sync:</strong> Captures confirmation Lenovo Case IDs from the portal and writes them directly back into the Excel tracker.</li>
+                <li><strong>Automated Next-Day Status Reconciliation:</strong> Checks active ticket statuses on the portal and updates Excel columns, replacing manual next-day checks.</li>
+                <li><strong>High Production Impact:</strong> Actively deployed for <strong>30+ Lenovo support tickets per month</strong>, eliminating hours of manual data entry weekly.</li>
               </ul>
             </div>
 
@@ -976,18 +977,22 @@
                   <span class="terminal-dot dot-green"></span>
                 </div>
                 <span class="terminal-title">bash — ticketforge-cli</span>
-                <span class="t-dim">Python 3.11</span>
+                <span class="t-dim">Python 3.11 | Selenium</span>
               </div>
               <div class="terminal-body">
-                <div><span class="t-dim">$</span> <span class="t-cmd">python ticketforge.py --batch hardware_queue.xlsx</span></div>
-                <div class="t-dim">[INFO] Reading 8 devices from Excel manifest...</div>
-                <div>[AUTH] Authenticating session with Lenovo Portal... <span class="t-success">OK</span></div>
-                <div>[RUN] Processing Device 1/8: <span class="t-highlight">SN: PF3K98A1 (ThinkPad T14)</span></div>
-                <div class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;↳ Submitting warranty claim for: Motherboard Failure</div>
-                <div class="t-success">&nbsp;&nbsp;&nbsp;&nbsp;✔ Ticket Created! Case ID: #4010892211</div>
-                <div>[SYNC] Updating hardware_queue.xlsx... <span class="t-success">Done</span></div>
+                <div><span class="t-dim">$</span> <span class="t-cmd">python ticketforge.py --batch hardware_tracker.xlsx</span></div>
+                <div class="t-dim">[INFO] Reading hardware support queue from hardware_tracker.xlsx...</div>
+                <div>[AUTH] Authenticated with Lenovo Commercial Service Portal... <span class="t-success">OK</span></div>
+                <div>[RUN] Processing 1/5: <span class="t-highlight">SN: PF3K98A1 (ThinkPad T14 Gen 3)</span></div>
+                <div class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;↳ Issue: Motherboard / Power Failure</div>
+                <div class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;↳ Support Location: Alternate Site (Gurugram Remote WFH)</div>
+                <div class="t-success">&nbsp;&nbsp;&nbsp;&nbsp;✔ Ticket Created! Lenovo Case ID: #4010892211 written to Excel.</div>
                 <div class="t-dim">--------------------------------------------------</div>
-                <div><span class="t-success">✓ 8/8 Tickets successfully submitted in 1m 42s.</span></div>
+                <div><span class="t-cmd">$</span> <span class="t-cmd">python ticketforge.py --check-status --tracker hardware_tracker.xlsx</span></div>
+                <div class="t-dim">[SYNC] Running next-day status check for 18 active tickets...</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;↳ Case #4010884102: <span class="t-highlight">Technician Dispatched (Scheduled 28-Oct)</span></div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;↳ Case #4010871920: <span class="t-success">Parts Replaced / Case Closed</span></div>
+                <div class="t-success">✓ 18/18 ticket statuses synced back to Excel in 42s. (0 manual portal logins)</div>
                 <div><span class="t-dim">$</span> <span class="t-cmd">_</span></div>
               </div>
             </div>
@@ -1021,7 +1026,7 @@
               <span class="eyebrow">Zero-Touch Provisioning</span>
               <h4>Automated New-Hire Onboarding Framework</h4>
               <p>
-                Engineered a modular PowerShell automation suite bridging Microsoft Entra ID and MECM. Provisions role-based standard operating environments, triggers silent app installs, and generates auditable sign-off checklists.
+                Engineered a modular PowerShell automation suite bridging Microsoft Entra ID and MECM. Provisions role-based standard operating environments, triggers silent app installs, and generates auditable sign-off checklists, cutting onboarding from 8h to &lt;4h.
               </p>
               <div class="subproject-tags">
                 <span>PowerShell</span>
@@ -1153,6 +1158,7 @@
               <ul class="timeline-bullets">
                 <li>Administered a fleet of <strong>500+ endpoints</strong> across Windows, macOS, and mobile using Intune, MECM, Jamf Pro, and Autopilot for BCG.</li>
                 <li>Achieved and sustained <strong>97% patch compliance</strong>, eliminating zero-day exposures across client consulting fleets.</li>
+                <li>Engineered <strong>TicketForge</strong> (Python/Selenium), automating bulk Lenovo hardware warranty claims and next-day status tracking for <strong>30+ tickets/month</strong>, eliminating manual portal entry errors.</li>
                 <li>Maintained <strong>92% SLA adherence</strong> across P1–P5 incidents via ServiceNow following strict ITIL v4 processes.</li>
                 <li>Reduced L1 support escalations by <strong>30%</strong> by developing self-service documentation and standardizing diagnostic playbooks.</li>
                 <li>Delivered flawless IT infrastructure and AV operations for <strong>20+ high-visibility leadership conferences</strong> with zero downtime.</li>
@@ -1161,6 +1167,7 @@
                 <span class="timeline-tag">Boston Consulting Group</span>
                 <span class="timeline-tag">Microsoft Intune</span>
                 <span class="timeline-tag">Jamf Pro</span>
+                <span class="timeline-tag">Python & Selenium</span>
                 <span class="timeline-tag">ServiceNow</span>
                 <span class="timeline-tag">VIP IT Support</span>
               </div>
