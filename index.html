@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TicketForge: watch an Excel sheet file its own Lenovo tickets">
+<meta property="og:description" content="Python and Selenium tool that files Lenovo warranty tickets from Excel, writes Case IDs back, and syncs status the next day. Interactive demo, sample data.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
 <title>TicketForge: watch an Excel sheet file its own Lenovo tickets</title>
 <meta name="description" content="TicketForge turns a hardware tracker in Excel into filed Lenovo warranty tickets, written-back Case IDs, and next-day status sync. Python and Selenium.">
@@ -45,6 +48,15 @@ h1{font:600 clamp(2.1rem,5.4vw,3.6rem)/1.08 var(--serif);margin:0 0 18px;max-wid
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .sheet-bar :focus-visible{outline-color:currentColor}
 .day{font:600 .8rem var(--mono);padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.24)}
+.form{border-top:1px solid var(--line);padding:14px 16px;background:var(--surface)}
+.fh{display:flex;justify-content:space-between;gap:6px 14px;flex-wrap:wrap;font-size:.88rem;color:var(--muted);margin-bottom:10px}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.f{border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-height:52px}
+.f small{display:block;font-size:.72rem;color:var(--muted)}
+.f span{display:block;font:.82rem var(--mono);min-height:1.25em;overflow-wrap:anywhere}
+.f.on{background:var(--xl-soft);border-color:var(--xl)}
+.f.alt.on{background:var(--amber-soft);border-color:var(--amber)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
 .stat{padding:12px 16px;border-right:1px solid var(--line)}
 .stat:last-child{border-right:0}
@@ -103,7 +115,7 @@ ol.flow span{color:var(--muted)}
 footer{padding:34px 0 56px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
 footer p{max-width:72ch}
 
-@media (max-width:760px){.two,.features{grid-template-columns:1fr}.stat{padding:10px 12px}.stat b{font-size:1.15rem}}
+@media (max-width:760px){.two,.features{grid-template-columns:1fr}.stat{padding:10px 12px}.fg{grid-template-columns:repeat(2,1fr)}.stat b{font-size:1.15rem}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
 </style>
 </head>
@@ -138,8 +150,13 @@ footer p{max-width:72ch}
         <tbody id="rows"></tbody>
       </table>
     </div>
-    <div class="log" id="log" role="log" aria-live="polite"><div class="d">Waiting. Press “Run batch” to create tickets.</div></div>
+    <div class="form" aria-hidden="true">
+      <div class="fh"><span id="fh"></span><span id="fc"></span></div>
+      <div class="fg" id="fg"></div>
+    </div>
+    <div class="log" id="log" role="log" aria-live="off"><div class="d">Waiting. Press “Run batch” to create tickets.</div></div>
   </div>
+  <p class="sr" id="sr" role="status"></p>
   <p class="note">Everything on this page is sample data and runs in your browser. The real tool drives the Lenovo portal with Selenium.</p>
 </div>
 
@@ -167,9 +184,19 @@ footer p{max-width:72ch}
   <h2>Three things it handles</h2>
   <div class="features">
     <div><h3>Bulk ingestion</h3><p>The whole list runs in one go instead of one ticket at a time.</p></div>
-    <div><h3>Dynamic routing</h3><p>Users at home or at a branch get an alternate dispatch address. Try it above: those rows turn amber.</p></div>
+    <div><h3>Dynamic routing</h3><p>Users at home or at a branch get an alternate dispatch address. Try it above: those rows and their address fields turn amber.</p></div>
     <div><h3>Next-day sync</h3><p>Status for every active ticket lands in Excel with no manual login.</p></div>
   </div>
+</section>
+
+<section>
+  <h2>Design choices</h2>
+  <div class="features">
+    <div><h3>Excel stays the source of truth</h3><p>The tracker is both the input and the record. Case IDs and statuses are written back to the same row, so the team keeps working in the sheet they already use.</p></div>
+    <div><h3>It drives the real portal</h3><p>Selenium operates the portal’s own pages, clicking and typing the way a person would, so nothing on the portal side has to change.</p></div>
+    <div><h3>Routing is decided per row</h3><p>Dispatch location is read from each row, so a user at home or a branch gets the right address without anyone editing the form.</p></div>
+  </div>
+  <!-- TODO (only add what your code really does): how duplicate tickets are avoided, how login and credentials are handled, what happens on portal errors or timeouts. -->
 </section>
 
 <section>
@@ -199,19 +226,36 @@ footer p{max-width:72ch}
   var rows=document.getElementById("rows"),log=document.getElementById("log"),
       runB=document.getElementById("run"),nextB=document.getElementById("next"),resetB=document.getElementById("reset");
   var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches, timers=[], busy=false;
-  var gap=reduce?0:520;
+  var gap=reduce?0:640;
 
   var cnt={f:0,w:0,s:0};
   function live(n){[].forEach.call(document.querySelectorAll("ol.flow li"),function(li,i){li.classList.toggle("live",i===n)})}
   function stat(id,n){var e=document.getElementById(id);e.textContent=n+" of "+DATA.length;e.parentNode.classList.toggle("on",n>0)}
   function esc(t){return String(t).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
   function draw(){
-    rows.innerHTML="";
+    rows.innerHTML="";buildForm();
     DATA.forEach(function(d,n){
       var tr=document.createElement("tr");
       tr.innerHTML="<td>"+esc(d.s)+"</td><td>"+esc(d.i)+"</td><td>"+esc(d.at)+"</td>"+
         '<td class="empty" id="dp'+n+'">-</td><td class="empty" id="ci'+n+'">-</td><td class="empty" id="st'+n+'">-</td>';
       rows.appendChild(tr);
+    });
+  }
+  function fields(d){return [["Serial number",d.s],["Product","Laptop"],["Issue",d.i],["Severity","System down"],["Contact name","Sample User"],["Phone","+00 000 000 000"],["Email","user@example.com"],["Company","Sample Co."],["Country","Sample Country"],["Support location",d.alt?"Alternate Site":"Default Site"],["Dispatch address",d.alt?"Alternate address":"Registered office"],["City","Sample City"],["Postal code","000000"],["Service type","On-site repair"],["Warranty","In warranty"],["Preferred slot","Next business day"]]}
+  function buildForm(){
+    var g=document.getElementById("fg");g.innerHTML="";
+    fields(DATA[0]).forEach(function(x){var e=document.createElement("div");e.className="f";e.innerHTML="<small>"+x[0]+"</small><span></span>";g.appendChild(e)});
+    document.getElementById("fh").textContent="Lenovo Service Portal, sample form. Waiting for the first ticket.";
+    document.getElementById("fc").textContent="0 of "+g.children.length+" fields filled";
+  }
+  function fillForm(d,n){
+    var els=document.getElementById("fg").children,f=fields(d),k=0,fc=document.getElementById("fc");
+    document.getElementById("fh").textContent="Filling ticket "+(n+1)+" of "+DATA.length;
+    [].forEach.call(els,function(e){e.className="f";e.lastChild.textContent=""});
+    fc.textContent="0 of "+f.length+" fields filled";
+    f.forEach(function(x,i){
+      var go=function(){var e=els[i];e.className="f on"+(d.alt&&(i===9||i===10)?" alt":"");e.lastChild.textContent=x[1];fc.textContent=(++k)+" of "+f.length+" fields filled"};
+      if(reduce)go();else later(go,i*30);
     });
   }
   function put(id,html){var c=document.getElementById(id);c.className="pop";c.innerHTML=html}
@@ -232,26 +276,26 @@ footer p{max-width:72ch}
     var steps=[function(){live(0);line("Reading hardware_tracker.xlsx: "+DATA.length+" rows","d")},function(){live(1);line("Logging in to the Lenovo Service Portal...","d")}];
     DATA.forEach(function(d,n){
       steps.push(function(){
-        line("Processing "+(n+1)+"/"+DATA.length,"d");
+        line("Processing "+(n+1)+"/"+DATA.length,"d");fillForm(d,n);
         line("  Support Location: "+(d.alt?"Alternate Site":"Default Site"),d.alt?"a":"");
         put("dp"+n,'<span class="chip '+(d.alt?"alt":"def")+'">'+(d.alt?"Alternate Site":"Default Site")+"</span>");live(2);stat("s1",++cnt.f);
       });
       steps.push(function(){
-        line("  Case ID "+d.id+" written to Excel","g");
+        line("  Case ID "+d.id+" written to Excel","g");document.getElementById("fh").textContent="Ticket "+(n+1)+" submitted. Lenovo returned "+d.id;
         put("ci"+n,esc(d.id));put("st"+n,'<span class="chip sub">Submitted</span>');live(3);stat("s2",++cnt.w);
       });
     });
-    chain(steps,function(){line("Done. "+DATA.length+" tickets created.","g");live(-1);busy=false;nextB.disabled=false});
+    chain(steps,function(){line("Done. "+DATA.length+" tickets created.","g");live(-1);document.getElementById("sr").textContent=DATA.length+" sample tickets created and Case IDs written to the sheet.";busy=false;nextB.disabled=false});
   }
   function nextDay(){
     if(busy)return;busy=true;nextB.disabled=true;
-    line("\u00a0");document.getElementById("day").textContent="Day 2";live(4);line("$ python ticketforge.py --check-status","c");line("Checking "+DATA.length+" active tickets...","d");
+    line("\u00a0");document.getElementById("day").textContent="Day 2";live(4);document.getElementById("fh").textContent="Next day: the portal is only read, never filled. Statuses go straight to the sheet.";document.getElementById("fc").textContent="";line("$ python ticketforge.py --check-status","c");line("Checking "+DATA.length+" active tickets...","d");
     var steps=DATA.map(function(d,n){return function(){
       var fin=d.st==="Part replaced";
       put("st"+n,'<span class="chip '+(fin?"fin":"mid")+'">'+esc(d.st)+"</span>");
       line("  "+d.id+": "+d.st);stat("s3",++cnt.s);
     }});
-    chain(steps,function(){line(DATA.length+" active tickets synced.","g");live(-1);busy=false});
+    chain(steps,function(){line(DATA.length+" active tickets synced.","g");live(-1);document.getElementById("sr").textContent=DATA.length+" ticket statuses synced to the sheet.";busy=false});
   }
   runB.addEventListener("click",runBatch);
   nextB.addEventListener("click",nextDay);
