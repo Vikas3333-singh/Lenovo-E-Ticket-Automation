@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
 <title>TicketForge: watch an Excel sheet file its own Lenovo tickets</title>
 <meta name="description" content="TicketForge turns a hardware tracker in Excel into filed Lenovo warranty tickets, written-back Case IDs, and next-day status sync. Python and Selenium.">
 <style>
@@ -38,9 +40,21 @@ h1{font:600 clamp(2.1rem,5.4vw,3.6rem)/1.08 var(--serif);margin:0 0 18px;max-wid
 @media (prefers-color-scheme:dark){.sheet-bar{color:#07140D}}
 .sheet-bar b{font-weight:600;margin-right:auto}
 .sheet-bar small{opacity:.9}
-.btn{font:600 .92rem var(--sans);border:2px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:7px 14px;cursor:pointer}
+.btn{font:600 .92rem var(--sans);border:2px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:0 16px;min-height:40px;cursor:pointer}
 .btn.fill{background:#fff;color:#14201A;border-color:#fff}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.sheet-bar :focus-visible{outline-color:currentColor}
+.day{font:600 .8rem var(--mono);padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.24)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.stat{padding:12px 16px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font:600 1.5rem/1.1 var(--serif);color:var(--muted)}
+.stat span{font-size:.82rem;color:var(--muted)}
+.stat.on b{color:var(--xl)}
+td:first-child,th:first-child{position:sticky;left:0;background:var(--surface);box-shadow:1px 0 0 var(--line)}
+th:first-child{background:var(--head)}
+ol.flow li.live b{color:var(--xl)}
+ol.flow li.live::before{box-shadow:0 0 0 5px var(--xl-soft)}
 .scroller{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:760px;font:.9rem var(--mono)}
 th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap}
@@ -89,13 +103,14 @@ ol.flow span{color:var(--muted)}
 footer{padding:34px 0 56px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
 footer p{max-width:72ch}
 
-@media (max-width:760px){.two,.features{grid-template-columns:1fr}}
+@media (max-width:760px){.two,.features{grid-template-columns:1fr}.stat{padding:10px 12px}.stat b{font-size:1.15rem}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
 
+<!-- TODO: add a "View code" link to the public repo here once it exists -->
 <header class="top">TicketForge <span>by Vikas Singh</span></header>
 
 <main>
@@ -107,9 +122,15 @@ footer p{max-width:72ch}
     <div class="sheet-bar">
       <b>hardware_tracker.xlsx</b>
       <small>sample data</small>
+      <span class="day" id="day">Day 1</span>
       <button class="btn fill" id="run">Run batch</button>
       <button class="btn" id="next" disabled>Next day</button>
       <button class="btn" id="reset">Reset</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="s1">0 of 5</b><span>Tickets filed</span></div>
+      <div class="stat"><b id="s2">0 of 5</b><span>Case IDs written back</span></div>
+      <div class="stat"><b id="s3">0 of 5</b><span>Statuses synced</span></div>
     </div>
     <div class="scroller">
       <table aria-label="Sample hardware tracker">
@@ -180,6 +201,9 @@ footer p{max-width:72ch}
   var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches, timers=[], busy=false;
   var gap=reduce?0:520;
 
+  var cnt={f:0,w:0,s:0};
+  function live(n){[].forEach.call(document.querySelectorAll("ol.flow li"),function(li,i){li.classList.toggle("live",i===n)})}
+  function stat(id,n){var e=document.getElementById(id);e.textContent=n+" of "+DATA.length;e.parentNode.classList.toggle("on",n>0)}
   function esc(t){return String(t).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
   function draw(){
     rows.innerHTML="";
@@ -199,35 +223,35 @@ footer p{max-width:72ch}
   }
 
   function reset(){
-    clear();draw();log.innerHTML="";line("Waiting. Press “Run batch” to create tickets.","d");
+    clear();draw();cnt={f:0,w:0,s:0};stat("s1",0);stat("s2",0);stat("s3",0);live(-1);document.getElementById("day").textContent="Day 1";log.innerHTML="";line("Waiting. Press “Run batch” to create tickets.","d");
     runB.disabled=false;nextB.disabled=true;
   }
   function runBatch(){
     if(busy)return;busy=true;runB.disabled=true;nextB.disabled=true;
     log.innerHTML="";line("$ python ticketforge.py --batch hardware_tracker.xlsx","c");
-    var steps=[];
+    var steps=[function(){live(0);line("Reading hardware_tracker.xlsx: "+DATA.length+" rows","d")},function(){live(1);line("Logging in to the Lenovo Service Portal...","d")}];
     DATA.forEach(function(d,n){
       steps.push(function(){
         line("Processing "+(n+1)+"/"+DATA.length,"d");
         line("  Support Location: "+(d.alt?"Alternate Site":"Default Site"),d.alt?"a":"");
-        put("dp"+n,'<span class="chip '+(d.alt?"alt":"def")+'">'+(d.alt?"Alternate Site":"Default Site")+"</span>");
+        put("dp"+n,'<span class="chip '+(d.alt?"alt":"def")+'">'+(d.alt?"Alternate Site":"Default Site")+"</span>");live(2);stat("s1",++cnt.f);
       });
       steps.push(function(){
         line("  Case ID "+d.id+" written to Excel","g");
-        put("ci"+n,esc(d.id));put("st"+n,'<span class="chip sub">Submitted</span>');
+        put("ci"+n,esc(d.id));put("st"+n,'<span class="chip sub">Submitted</span>');live(3);stat("s2",++cnt.w);
       });
     });
-    chain(steps,function(){line("Done. "+DATA.length+" tickets created.","g");busy=false;nextB.disabled=false});
+    chain(steps,function(){line("Done. "+DATA.length+" tickets created.","g");live(-1);busy=false;nextB.disabled=false});
   }
   function nextDay(){
     if(busy)return;busy=true;nextB.disabled=true;
-    line("");line("$ python ticketforge.py --check-status","c");line("Checking "+DATA.length+" active tickets...","d");
+    line("\u00a0");document.getElementById("day").textContent="Day 2";live(4);line("$ python ticketforge.py --check-status","c");line("Checking "+DATA.length+" active tickets...","d");
     var steps=DATA.map(function(d,n){return function(){
       var fin=d.st==="Part replaced";
       put("st"+n,'<span class="chip '+(fin?"fin":"mid")+'">'+esc(d.st)+"</span>");
-      line("  "+d.id+": "+d.st);
+      line("  "+d.id+": "+d.st);stat("s3",++cnt.s);
     }});
-    chain(steps,function(){line(DATA.length+" active tickets synced.","g");busy=false});
+    chain(steps,function(){line(DATA.length+" active tickets synced.","g");live(-1);busy=false});
   }
   runB.addEventListener("click",runBatch);
   nextB.addEventListener("click",nextDay);
