@@ -1,380 +1,1669 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="TicketForge turns a hardware tracker in Excel into filed Lenovo warranty tickets, written-back Case IDs, and next-day status sync. Python and Selenium.">
+<meta name="description" content="TicketForge reads a hardware tracker in Excel, submits Lenovo warranty claims with Selenium, writes the Case IDs back to the sheet, and updates repair status the next day. Python and Selenium.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="TicketForge: watch an Excel sheet file its own Lenovo tickets">
-<meta property="og:description" content="Python and Selenium tool that files Lenovo warranty tickets from Excel, writes Case IDs back, and syncs status the next day. Interactive demo, sample data.">
+<meta property="og:title" content="TicketForge — Lenovo warranty claims from an Excel tracker">
+<meta property="og:description" content="A Python and Selenium tool that reads an Excel tracker, submits Lenovo warranty claims, writes Case IDs back to the sheet, and updates repair status the next day. Interactive demo.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
-<title>TicketForge: watch an Excel sheet file its own Lenovo tickets</title>
+<title>TicketForge — Lenovo warranty claims from an Excel tracker</title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('tf-theme');
+    if(!t){ t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <style>
+/* ============================================================
+   Tokens
+   ============================================================ */
 :root{
-  --bg:#F1F4F0;--surface:#fff;--ink:#121D17;--muted:#4A5A52;--line:#C9D4CC;--head:#E4EBE6;
-  --xl:#17653A;--xl-soft:#DDEEE4;--on-xl:#fff;--blue:#2352C9;--blue-soft:#E1E9FC;--amber:#8A5700;--amber-soft:#FBEBC8;
-  --log-bg:#13201A;--log-ink:#D6E6DC;--log-dim:#8AA597;
-  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --bg:#F6F4EF;
+  --surface:#FFFFFF;
+  --surface-2:#FBF9F5;
+  --surface-3:#F0EDE6;
+  --ink:#15130F;
+  --ink-2:#3A362E;
+  --muted:#6E675B;
+  --line:#E3DED3;
+  --line-2:#EEEBE4;
+  --head:#F7F5F0;
+
+  --accent:#0E5C44;
+  --accent-2:#14795A;
+  --accent-soft:#E4F1EA;
+  --accent-line:#BEDDCE;
+  --on-accent:#FFFFFF;
+
+  --amber:#9A6400;
+  --amber-soft:#FBF0D7;
+  --amber-line:#EFD9A6;
+
+  --blue:#2B4EA8;
+  --blue-soft:#E8EDFB;
+  --blue-line:#C9D5F4;
+
+  --log-bg:#0C1512;
+  --log-bg2:#08110E;
+  --log-ink:#D5E6DB;
+  --log-dim:#7B9486;
+  --log-amber:#F0B955;
+  --log-green:#6FD39A;
+  --log-blue:#8DB4FF;
+
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-  --t-sm:clamp(.8rem,.78rem + .1vw,.875rem);--t-base:clamp(1rem,.96rem + .2vw,1.0625rem);
-  --t-lg:clamp(1.2rem,1.1rem + .5vw,1.5rem);--t-xl:clamp(1.5rem,1.2rem + 1.4vw,2.1rem);--t-hero:clamp(2.2rem,1.4rem + 4.2vw,3.8rem);
-  --s1:.5rem;--s2:.75rem;--s3:1.125rem;--s4:1.75rem;--s5:3rem;--s6:4.5rem;
-  --r:10px;
+
+  --t-xs:clamp(.71rem,.69rem + .06vw,.78rem);
+  --t-sm:clamp(.82rem,.80rem + .1vw,.9rem);
+  --t-base:clamp(1rem,.96rem + .2vw,1.0625rem);
+  --t-lg:clamp(1.16rem,1.06rem + .5vw,1.45rem);
+  --t-xl:clamp(1.55rem,1.18rem + 1.6vw,2.2rem);
+  --t-hero:clamp(2.35rem,1.35rem + 4.6vw,4.15rem);
+
+  --s1:.5rem; --s2:.75rem; --s3:1.125rem; --s4:1.75rem; --s5:3.25rem; --s6:5rem;
+
+  --r:14px; --r-sm:9px;
+  --shadow-sm:0 1px 2px rgb(21 19 15/.05);
+  --shadow-md:0 1px 2px rgb(21 19 15/.05),0 12px 32px -16px rgb(21 19 15/.18);
+  --shadow-lg:0 2px 6px rgb(21 19 15/.05),0 40px 80px -40px rgb(21 19 15/.28);
+  --glow:0 0 0 1px rgb(14 92 68/.06),0 30px 70px -40px rgb(14 92 68/.35);
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0E1512;--surface:#16201B;--ink:#E4EEE8;--muted:#98ABA1;--line:#2A3A32;--head:#1C2923;
-  --xl:#5CC98B;--xl-soft:#173A29;--on-xl:#07140D;--blue:#86A8FF;--blue-soft:#1B2A52;--amber:#F0B955;--amber-soft:#3B2D10;--log-bg:#09100D;
-}}
+
+[data-theme="dark"]{
+  --bg:#0B0D0C;
+  --surface:#121715;
+  --surface-2:#0F1412;
+  --surface-3:#1A211E;
+  --ink:#EEEBE4;
+  --ink-2:#BEB9AD;
+  --muted:#8E8A80;
+  --line:#232A27;
+  --line-2:#1A211E;
+  --head:#161C19;
+
+  --accent:#5FD3A3;
+  --accent-2:#7EE3B8;
+  --accent-soft:#10301F;
+  --accent-line:#1F5138;
+  --on-accent:#06120C;
+
+  --amber:#F0BC5C;
+  --amber-soft:#33290F;
+  --amber-line:#544216;
+
+  --blue:#93B2FF;
+  --blue-soft:#172647;
+  --blue-line:#2A3F6B;
+
+  --log-bg:#080E0B;
+  --log-bg2:#050907;
+
+  --shadow-sm:0 1px 2px rgb(0 0 0/.4);
+  --shadow-md:0 1px 2px rgb(0 0 0/.4),0 12px 32px -16px rgb(0 0 0/.7);
+  --shadow-lg:0 2px 6px rgb(0 0 0/.4),0 40px 80px -40px rgb(0 0 0/.9);
+  --glow:0 0 0 1px rgb(95 211 163/.08),0 30px 70px -40px rgb(95 211 163/.25);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:var(--t-base)/1.6 var(--sans);-webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
-:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:4px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.skip{position:absolute;left:var(--s2);top:-4rem;background:var(--ink);color:var(--bg);padding:var(--s1) var(--s2);border-radius:6px;z-index:9;transition:top .15s}
-.skip:focus{top:var(--s2)}
-.top{padding:var(--s4) 0 0;font-weight:700}
-.top span{font-weight:400;color:var(--muted)}
-
-.hero{padding:var(--s5) 0 var(--s5)}
-h1{font:600 var(--t-hero)/1.06 var(--serif);margin:0 0 var(--s3);max-width:18ch;letter-spacing:-.015em;text-wrap:balance}
-.lede{font-size:var(--t-lg);line-height:1.5;color:var(--muted);max-width:58ch;margin:0 0 var(--s4)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:84px}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font:var(--t-base)/1.65 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  transition:background-color .3s ease,color .3s ease;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,36px)}
 p{margin:0 0 var(--s2);max-width:66ch}
+a{color:inherit}
+img,svg{display:block}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{
+  position:absolute;left:var(--s2);top:-5rem;z-index:200;
+  background:var(--ink);color:var(--bg);
+  padding:.55rem 1rem;border-radius:8px;font-weight:600;
+  transition:top .2s ease;
+}
+.skip:focus{top:var(--s2)}
 
-/* the demo: the one bold element */
-.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 2px rgb(0 0 0/.06)}
-.bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:var(--s2) var(--s3);background:var(--xl);color:var(--on-xl)}
-.bar b{margin-right:auto;font-weight:600}
-.bar small{opacity:.9}
-.bar :focus-visible{outline-color:currentColor}
-.day{font:600 var(--t-sm) var(--mono);padding:3px 10px;border-radius:99px;background:rgb(255 255 255/.22)}
-.btn{font:600 .92rem var(--sans);border:2px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:0 var(--s3);min-height:44px;cursor:pointer;transition:transform .12s,background-color .15s,opacity .15s}
-.btn:hover:not(:disabled){background:rgb(255 255 255/.18)}
+/* ============================================================
+   Nav
+   ============================================================ */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid transparent;
+  transition:border-color .25s ease,background-color .25s ease;
+}
+.nav.stuck{border-bottom-color:var(--line)}
+.nav-inner{
+  max-width:1120px;margin:0 auto;
+  padding:12px clamp(16px,4vw,36px);
+  display:flex;align-items:center;gap:var(--s3);
+}
+.brand{
+  display:inline-flex;align-items:center;gap:9px;
+  text-decoration:none;font-weight:700;letter-spacing:-.02em;
+  font-size:1.02rem;white-space:nowrap;
+}
+.brand-mark{
+  display:grid;place-items:center;
+  width:29px;height:29px;border-radius:9px;
+  background:var(--accent);color:var(--on-accent);
+  box-shadow:var(--shadow-sm);
+  flex-shrink:0;
+}
+.brand-mark svg{width:16px;height:16px}
+.brand em{
+  font-style:normal;font-weight:400;color:var(--muted);
+  font-size:var(--t-sm);
+}
+.brand em::before{content:"·";margin-right:.5em;opacity:.55}
+
+.nav-links{
+  display:flex;gap:2px;margin-left:auto;align-items:center;
+}
+.nav-links a{
+  text-decoration:none;font-size:var(--t-sm);font-weight:500;
+  color:var(--muted);padding:7px 11px;border-radius:7px;
+  transition:color .18s ease,background-color .18s ease;
+}
+.nav-links a:hover{color:var(--ink);background:var(--surface-3)}
+
+.theme-toggle{
+  display:grid;place-items:center;
+  width:36px;height:36px;flex-shrink:0;
+  border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);color:var(--ink-2);
+  cursor:pointer;
+  transition:border-color .18s ease,background-color .18s ease,color .18s ease,transform .12s ease;
+}
+.theme-toggle:hover{border-color:var(--accent-line);color:var(--accent)}
+.theme-toggle:active{transform:scale(.96)}
+.theme-toggle svg{width:16px;height:16px}
+.theme-toggle .moon{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .moon{display:block}
+
+@media (max-width:820px){
+  .nav-links{display:none}
+  .brand{margin-right:auto}
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{
+  position:relative;
+  padding:clamp(2.5rem,6vw,4.5rem) 0 var(--s5);
+  overflow:hidden;
+}
+.hero::before{
+  content:"";
+  position:absolute;inset:-30% -20% auto -20%;height:120%;
+  background:
+    radial-gradient(46% 42% at 18% 8%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 62%),
+    radial-gradient(40% 36% at 88% 0%, color-mix(in srgb, var(--blue) 10%, transparent) 0%, transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+.hero > *{position:relative;z-index:1}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;
+  font:600 var(--t-xs)/1 var(--sans);
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);
+  background:var(--accent-soft);
+  border:1px solid var(--accent-line);
+  padding:8px 13px;border-radius:99px;
+  margin-bottom:var(--s3);
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;background:currentColor;
+  position:relative;flex-shrink:0;
+}
+.dot::after{
+  content:"";position:absolute;inset:-3px;border-radius:50%;
+  border:1.5px solid currentColor;opacity:0;
+  animation:ping 2.6s cubic-bezier(0,.6,.4,1) infinite;
+}
+@keyframes ping{
+  0%{transform:scale(.6);opacity:.7}
+  70%,100%{transform:scale(2);opacity:0}
+}
+
+h1{
+  font:600 var(--t-hero)/1.03 var(--serif);
+  letter-spacing:-.028em;
+  margin:0 0 var(--s3);
+  max-width:20ch;
+  text-wrap:balance;
+}
+h1 .underline{
+  position:relative;white-space:nowrap;
+  background-image:linear-gradient(var(--accent-line),var(--accent-line));
+  background-repeat:no-repeat;
+  background-size:100% 8px;
+  background-position:0 92%;
+  padding:0 .06em;
+}
+.lede{
+  font-size:var(--t-lg);
+  line-height:1.55;
+  color:var(--muted);
+  max-width:54ch;
+  margin:0 0 var(--s4);
+}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:var(--s3)}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:600 .92rem/1 var(--sans);
+  letter-spacing:-.005em;
+  border-radius:10px;
+  padding:0 18px;min-height:44px;
+  border:1.5px solid transparent;
+  cursor:pointer;text-decoration:none;
+  transition:transform .12s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,opacity .18s ease,color .18s ease;
+}
 .btn:active:not(:disabled){transform:translateY(1px)}
-.btn.fill{background:var(--on-xl);color:var(--xl);border-color:var(--on-xl)}
-.btn.fill:hover:not(:disabled){background:var(--on-xl);opacity:.88}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{
+  background:var(--accent);color:var(--on-accent);
+  border-color:var(--accent);
+  box-shadow:var(--shadow-sm);
+}
+.btn-primary:hover{background:var(--accent-2);border-color:var(--accent-2);box-shadow:var(--shadow-md)}
+.btn-ghost{
+  background:var(--surface);color:var(--ink);
+  border-color:var(--line);
+  box-shadow:var(--shadow-sm);
+}
+.btn-ghost:hover{border-color:var(--accent-line);color:var(--accent)}
+.btn svg{width:15px;height:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
-.stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
-.stat{padding:var(--s2) var(--s3);border-right:1px solid var(--line)}
+.hero-meta{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  font-size:var(--t-xs);color:var(--muted);
+}
+.hero-meta .sep{opacity:.45}
+
+/* ============================================================
+   Demo window
+   ============================================================ */
+.demo-shell{
+  position:relative;
+  margin-top:var(--s4);
+}
+.demo-shell::before{
+  content:"";
+  position:absolute;inset:6% 4% -4% 4%;
+  background:var(--accent);
+  filter:blur(70px);opacity:.14;
+  border-radius:50%;
+  z-index:0;pointer-events:none;
+}
+.app{
+  position:relative;z-index:1;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+  box-shadow:var(--shadow-lg);
+}
+
+.titlebar{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 15px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--line);
+  font-size:var(--t-sm);
+}
+.traffic{display:flex;gap:6px;margin-right:3px;flex-shrink:0}
+.traffic i{width:10px;height:10px;border-radius:50%;opacity:.92}
+.traffic i:nth-child(1){background:#FF5F57}
+.traffic i:nth-child(2){background:#FEBC2E}
+.traffic i:nth-child(3){background:#28C840}
+
+.fname{
+  font-family:var(--mono);font-weight:600;font-size:.82rem;
+  color:var(--ink-2);letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tag{
+  margin-left:auto;flex-shrink:0;
+  font:600 var(--t-xs)/1 var(--sans);
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);
+  background:var(--surface-3);
+  border:1px solid var(--line);
+  padding:5px 9px;border-radius:99px;
+}
+
+/* toolbar */
+.toolbar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+  padding:12px 15px;
+  background:var(--accent);color:var(--on-accent);
+  position:relative;
+}
+.toolbar::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.09),transparent 70%);
+}
+.day{
+  font:600 .78rem/1 var(--mono);
+  padding:7px 11px;border-radius:99px;
+  background:rgb(255 255 255/.16);
+  border:1px solid rgb(255 255 255/.24);
+  letter-spacing:.03em;
+  position:relative;z-index:1;flex-shrink:0;
+}
+.spacer{flex:1 1 auto;min-width:0}
+
+.speed{
+  display:flex;align-items:center;gap:2px;
+  background:rgb(0 0 0/.14);
+  border:1px solid rgb(255 255 255/.18);
+  border-radius:9px;padding:2px;
+  position:relative;z-index:1;
+}
+.speed button{
+  font:600 .72rem/1 var(--mono);
+  border:0;background:transparent;color:inherit;
+  padding:6px 8px;border-radius:7px;cursor:pointer;
+  opacity:.65;transition:background-color .15s,opacity .15s;
+}
+.speed button:hover{opacity:1}
+.speed button[aria-pressed="true"]{background:rgb(255 255 255/.22);opacity:1}
+
+.toolbar .btn{
+  min-height:38px;padding:0 14px;
+  font-size:.85rem;
+  position:relative;z-index:1;
+}
+.toolbar .btn-solid{
+  background:var(--on-accent);color:var(--accent);
+  border-color:var(--on-accent);
+  box-shadow:0 1px 2px rgb(0 0 0/.15);
+}
+.toolbar .btn-solid:hover:not(:disabled){opacity:.9;box-shadow:0 3px 10px rgb(0 0 0/.2)}
+.toolbar .btn-line{
+  background:transparent;color:inherit;
+  border-color:rgb(255 255 255/.55);
+}
+.toolbar .btn-line:hover:not(:disabled){background:rgb(255 255 255/.16)}
+
+/* progress */
+.progress{height:3px;background:var(--line-2);overflow:hidden}
+.progress i{
+  display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .4s cubic-bezier(.4,0,.2,1);
+}
+
+/* stats */
+.stats{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--surface-2);
+  border-bottom:1px solid var(--line);
+}
+.stat{
+  padding:13px 16px;position:relative;
+  border-right:1px solid var(--line);
+  transition:background-color .3s ease;
+}
 .stat:last-child{border-right:0}
-.stat b{display:block;font:600 var(--t-lg)/1.1 var(--serif);color:var(--muted);transition:color .3s}
-.stat span{font-size:var(--t-sm);color:var(--muted)}
-.stat.on b{color:var(--xl)}
+.stat b{
+  display:block;
+  font:600 clamp(1.1rem,1rem + .4vw,1.4rem)/1.1 var(--serif);
+  letter-spacing:-.015em;
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  transition:color .35s ease;
+}
+.stat span{display:block;font-size:var(--t-xs);color:var(--muted);margin-top:3px;line-height:1.3}
+.stat.done{background:var(--surface)}
+.stat.done b{color:var(--accent)}
+.stat.done::after{
+  content:"";position:absolute;left:16px;right:16px;bottom:0;height:2px;
+  background:var(--accent);border-radius:2px 2px 0 0;
+}
 
-.scroller{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:760px;font:.9rem var(--mono)}
-th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap}
-th{background:var(--head);font-weight:600;color:var(--muted)}
-tbody th{background:var(--surface);color:var(--ink);font-weight:400}
-th:first-child{position:sticky;left:0;box-shadow:1px 0 0 var(--line)}
+/* table */
+.scroller{overflow-x:auto;overscroll-behavior-x:contain}
+.scroller::-webkit-scrollbar{height:9px}
+.scroller::-webkit-scrollbar-track{background:transparent}
+.scroller::-webkit-scrollbar-thumb{
+  background:var(--line);border-radius:99px;
+  border:3px solid var(--surface);background-clip:padding-box;
+}
+table{
+  border-collapse:separate;border-spacing:0;
+  width:100%;min-width:800px;
+  font:.845rem var(--mono);
+}
+th,td{
+  padding:11px 15px;text-align:left;
+  border-bottom:1px solid var(--line);
+  border-right:1px solid var(--line);
+  white-space:nowrap;
+}
+th{
+  background:var(--head);
+  font:600 var(--t-xs)/1.3 var(--sans);
+  text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);
+}
+tbody th{
+  background:var(--surface);color:var(--ink);
+  font:600 .845rem var(--mono);letter-spacing:0;
+}
+th:first-child{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line)}
 th:last-child,td:last-child{border-right:0}
-tr:last-child>*{border-bottom:0}
-tbody tr{transition:background-color .25s}
-tbody tr.cur,tbody tr.cur th{background:var(--xl-soft)}
-td.empty{color:var(--line)}
-.pop{animation:pop .7s ease}
-@keyframes pop{from{background:var(--xl-soft)}to{background:transparent}}
-.chip{display:inline-block;padding:2px 9px;border-radius:99px;font:600 .8rem var(--sans)}
-.chip.alt,.chip.mid{background:var(--amber-soft);color:var(--amber)}
-.chip.def{background:var(--head);color:var(--muted)}
-.chip.sub{background:var(--blue-soft);color:var(--blue)}
-.chip.fin{background:var(--xl-soft);color:var(--xl)}
+tbody tr:last-child > *{border-bottom:0}
+tbody tr{cursor:pointer;transition:background-color .3s cubic-bezier(.4,0,.2,1)}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.sel,
+tbody tr.sel th{background:var(--accent-soft)}
+tbody tr.cur,
+tbody tr.cur th{background:var(--accent-soft)}
+tbody tr.cur th{box-shadow:inset 3px 0 0 var(--accent),1px 0 0 var(--line)}
 
-.console{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);border-top:1px solid var(--line)}
-.form{padding:var(--s3);border-right:1px solid var(--line)}
-.fh{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px var(--s3);font-size:var(--t-sm);color:var(--muted);margin-bottom:var(--s2)}
-.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.f{border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-height:52px;transition:background-color .2s,border-color .2s}
-.f small{display:block;font-size:.72rem;color:var(--muted)}
-.f span{display:block;font:.8rem var(--mono);min-height:1.25em;overflow-wrap:anywhere}
-.f.on{background:var(--xl-soft);border-color:var(--xl)}
-.f.alt.on{background:var(--amber-soft);border-color:var(--amber)}
-.log{background:var(--log-bg);color:var(--log-ink);font:.84rem/1.7 var(--mono);padding:var(--s3);min-height:200px;max-height:320px;overflow:auto}
-.log div{white-space:pre-wrap}
-.log .d{color:var(--log-dim)}.log .a{color:#F0B955}.log .g{color:#6FD39A}.log .c{color:#8DB4FF}
-.note{font-size:var(--t-sm);color:var(--muted);margin:var(--s2) 2px 0}
+.dash{color:var(--muted);opacity:.45}
 
-main>section{padding:var(--s5) 0;border-top:1px solid var(--line)}
-h2{font:600 var(--t-xl)/1.2 var(--serif);margin:0 0 var(--s3);text-wrap:balance}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
-.two>div{border-left:3px solid var(--xl);padding-left:var(--s3)}
-.two b{display:block;margin-bottom:4px}
-.ba{margin-top:var(--s4);display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4)}
-.ba span,.ba s{color:var(--muted)}
+.flash{animation:flash .9s cubic-bezier(.4,0,.2,1)}
+@keyframes flash{
+  0%{background:var(--accent-soft)}
+  100%{background:transparent}
+}
 
-ol.flow{list-style:none;margin:0 0 var(--s3);padding:0;counter-reset:s;max-width:68ch}
-.flow li{counter-increment:s;position:relative;padding:0 0 var(--s3) 52px}
-.flow li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--xl);color:var(--on-xl);display:grid;place-items:center;font-weight:700;transition:box-shadow .3s}
-.flow li::after{content:"";position:absolute;left:16px;top:40px;bottom:6px;width:2px;background:var(--line)}
-.flow li:last-child::after{display:none}
-.flow b{display:block;transition:color .3s}
-.flow span{color:var(--muted)}
-.flow li.live b{color:var(--xl)}
-.flow li.live::before{box-shadow:0 0 0 5px var(--xl-soft)}
+.chip{
+  display:inline-block;padding:3px 10px;border-radius:99px;
+  font:600 .74rem/1.45 var(--sans);
+  border:1px solid transparent;letter-spacing:.005em;
+}
+.chip.alt{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+.chip.mid{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+.chip.def{background:var(--surface-3);color:var(--muted);border-color:var(--line)}
+.chip.sub{background:var(--blue-soft);color:var(--blue);border-color:var(--blue-line)}
+.chip.fin{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
 
-.features{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
-.features>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s4) var(--s3)}
-.features.two-up{grid-template-columns:repeat(2,1fr)}
-h3{font:700 1.08rem/1.3 var(--sans);margin:0 0 var(--s1)}
-.features p{color:var(--muted);font-size:.96rem;line-height:1.55;margin:0}
+/* console */
+.console{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);
+  border-top:1px solid var(--line);
+}
+.form-pane{
+  padding:15px;border-right:1px solid var(--line);
+  background:var(--surface);
+  min-width:0;
+}
+.form-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  flex-wrap:wrap;gap:2px 14px;
+  font-size:var(--t-xs);color:var(--muted);
+  margin-bottom:11px;min-height:1.4em;
+}
+.form-head strong{color:var(--ink-2);font-weight:600;font-size:var(--t-sm)}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.field{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 9px;
+  min-height:52px;
+  background:var(--surface-2);
+  min-width:0;
+  transition:background-color .22s ease,border-color .22s ease;
+}
+.field small{
+  display:block;font-size:.665rem;color:var(--muted);
+  line-height:1.25;margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.field span{
+  display:block;font:.755rem var(--mono);
+  min-height:1.2em;overflow-wrap:anywhere;
+  color:var(--ink-2);line-height:1.35;
+}
+.field.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.field.on span{color:var(--ink)}
+.field.alt.on{background:var(--amber-soft);border-color:var(--amber-line)}
 
-.acc{max-width:76ch;margin:var(--s3) 0}
-details{border-bottom:1px solid var(--line)}
-details:first-child{border-top:1px solid var(--line)}
-summary{cursor:pointer;font-weight:700;padding:var(--s2) 0;list-style:none;display:flex;justify-content:space-between;gap:var(--s2);transition:color .15s}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"+";font:400 1.4rem/1 var(--mono);color:var(--xl);transition:transform .2s}
-summary:hover{color:var(--xl)}
-details[open] summary::after{transform:rotate(45deg)}
-details p{color:var(--muted);padding-bottom:var(--s2);margin:0;max-width:none}
-.limits{max-width:66ch;padding-left:20px;margin:0}
-.limits li{margin-bottom:var(--s1)}
-.stack{margin-top:var(--s3);color:var(--muted);font:.9rem var(--mono)}
-footer{padding:var(--s4) 0 var(--s5);border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
-footer p{max-width:72ch}
+.log{
+  background:linear-gradient(180deg,var(--log-bg),var(--log-bg2));
+  color:var(--log-ink);
+  font:.805rem/1.75 var(--mono);
+  padding:15px;
+  min-height:215px;max-height:340px;
+  overflow:auto;
+  min-width:0;
+}
+.log::-webkit-scrollbar{width:9px}
+.log::-webkit-scrollbar-thumb{
+  background:rgb(255 255 255/.12);border-radius:99px;
+  border:3px solid transparent;background-clip:padding-box;
+}
+.log div{white-space:pre-wrap;overflow-wrap:anywhere}
+.log .d{color:var(--log-dim)}
+.log .a{color:var(--log-amber)}
+.log .g{color:var(--log-green)}
+.log .c{color:var(--log-blue)}
 
-@media (max-width:900px){.console{grid-template-columns:1fr}.form{border-right:0;border-bottom:1px solid var(--line)}.features{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:640px){.two,.features,.features.two-up{grid-template-columns:1fr}.fg{grid-template-columns:repeat(2,1fr)}.stat{padding:10px 12px}.stat b{font-size:1.1rem}.bar b{flex-basis:100%}}
-@media (prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.demo-note{
+  font-size:var(--t-sm);color:var(--muted);
+  margin:var(--s2) 2px 0;
+  display:flex;align-items:flex-start;gap:7px;
+}
+.demo-note svg{width:14px;height:14px;flex-shrink:0;margin-top:4px;opacity:.7}
+
+/* ============================================================
+   Content sections
+   ============================================================ */
+main > section{
+  padding:var(--s5) 0;
+  border-top:1px solid var(--line);
+}
+.sec-head{margin-bottom:var(--s4);max-width:70ch}
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font:600 var(--t-xs)/1 var(--mono);
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+.kicker::before{
+  content:"";width:22px;height:1px;background:var(--accent-line);
+}
+h2{
+  font:600 var(--t-xl)/1.18 var(--serif);
+  letter-spacing:-.02em;
+  margin:0 0 10px;
+  text-wrap:balance;
+}
+.sec-head p{color:var(--muted);margin:0;font-size:1.02rem}
+
+/* cards */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  padding:var(--s4) var(--s3);
+  position:relative;
+  transition:border-color .22s ease,box-shadow .22s ease,transform .22s ease;
+}
+.card:hover{border-color:var(--accent-line);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.card h3{
+  font:700 1.04rem/1.35 var(--sans);
+  letter-spacing:-.012em;
+  margin:0 0 7px;
+}
+.card p{color:var(--muted);font-size:.96rem;line-height:1.6;margin:0}
+.card .icon{
+  display:grid;place-items:center;
+  width:36px;height:36px;border-radius:10px;
+  background:var(--accent-soft);color:var(--accent);
+  border:1px solid var(--accent-line);
+  margin-bottom:14px;
+}
+.card .icon svg{width:18px;height:18px}
+
+/* problem cards — accent bar */
+.card-bar::before{
+  content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;
+  background:var(--accent);border-radius:0 3px 3px 0;
+}
+.card-bar{padding-left:calc(var(--s3) + 14px)}
+
+/* before / after */
+.ba{
+  margin-top:var(--s3);
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+  padding:15px 18px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  font-size:var(--t-sm);
+}
+.ba .before{color:var(--muted)}
+.ba .before s{opacity:.65;text-decoration-thickness:1px}
+.ba .arrow{color:var(--line);font-family:var(--mono);font-weight:700}
+.ba .after{color:var(--accent);font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.ba .after .tick{
+  display:grid;place-items:center;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  font-size:.62rem;font-weight:700;flex-shrink:0;
+}
+
+/* timeline */
+.timeline{
+  list-style:none;margin:0;padding:0;
+  counter-reset:step;
+  max-width:72ch;
+}
+.timeline li{
+  counter-increment:step;
+  position:relative;
+  padding:0 0 1.4rem 58px;
+  min-height:42px;
+}
+.timeline li::before{
+  content:counter(step,decimal-leading-zero);
+  position:absolute;left:0;top:1px;
+  width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--surface);
+  border:1.5px solid var(--accent-line);
+  color:var(--accent);
+  font:700 .76rem var(--mono);
+  z-index:1;
+  transition:background-color .35s ease,color .35s ease,border-color .35s ease,box-shadow .35s ease;
+}
+.timeline li::after{
+  content:"";position:absolute;left:18.5px;top:40px;bottom:2px;width:1.5px;
+  background:var(--line);
+}
+.timeline li:last-child{padding-bottom:0}
+.timeline li:last-child::after{display:none}
+.timeline b{
+  display:block;font:700 1rem/1.4 var(--sans);
+  letter-spacing:-.008em;margin-bottom:2px;
+  transition:color .3s ease;
+}
+.timeline span{color:var(--muted);font-size:.96rem;line-height:1.55}
+.timeline li.live b{color:var(--accent)}
+.timeline li.live::before{
+  background:var(--accent);border-color:var(--accent);color:var(--on-accent);
+  box-shadow:0 0 0 5px var(--accent-soft);
+}
+
+/* accordion */
+.accordion{max-width:82ch;margin-top:var(--s3)}
+.accordion details{
+  border-bottom:1px solid var(--line);
+  transition:background-color .2s ease;
+}
+.accordion details:first-child{border-top:1px solid var(--line)}
+.accordion details[open]{background:var(--surface-2)}
+.accordion summary{
+  cursor:pointer;list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  padding:15px 14px;
+  font-weight:600;font-size:1rem;letter-spacing:-.008em;
+  border-radius:8px;
+  transition:color .16s ease;
+}
+.accordion summary::-webkit-details-marker{display:none}
+.accordion summary::after{
+  content:"";flex-shrink:0;
+  width:9px;height:9px;margin-right:5px;
+  border-right:2px solid var(--accent);
+  border-bottom:2px solid var(--accent);
+  transform:rotate(45deg);
+  transition:transform .24s cubic-bezier(.4,0,.2,1);
+}
+.accordion summary:hover{color:var(--accent)}
+.accordion details[open] summary::after{transform:rotate(-135deg)}
+.accordion .body{
+  padding:0 14px 1.15rem;
+  color:var(--muted);
+  font-size:.965rem;line-height:1.68;
+  max-width:74ch;
+  animation:slideDown .3s ease;
+}
+@keyframes slideDown{
+  from{opacity:0;transform:translateY(-5px)}
+  to{opacity:1;transform:none}
+}
+
+/* criteria card */
+.criteria{
+  margin-top:var(--s4);
+  background:var(--accent-soft);
+  border:1px solid var(--accent-line);
+  border-radius:var(--r);
+  padding:var(--s3) var(--s4);
+}
+.criteria h3{
+  font:700 .8rem/1 var(--sans);
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);
+  margin:0 0 12px;
+}
+.criteria ul{
+  list-style:none;margin:0;padding:0;
+  display:grid;gap:8px;
+}
+.criteria li{
+  display:flex;gap:10px;align-items:flex-start;
+  font-size:.955rem;line-height:1.55;
+  color:var(--ink-2);
+}
+.criteria li svg{
+  width:15px;height:15px;flex-shrink:0;margin-top:4px;color:var(--accent);
+}
+
+/* limits */
+.limits{
+  list-style:none;padding:0;margin:0;
+  display:grid;gap:10px;max-width:70ch;
+}
+.limits li{
+  display:flex;gap:11px;align-items:flex-start;
+  padding:13px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  font-size:.96rem;color:var(--muted);line-height:1.55;
+}
+.limits li svg{width:16px;height:16px;flex-shrink:0;margin-top:3px;color:var(--amber)}
+
+.stack{
+  margin-top:var(--s4);
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+}
+.stack-label{
+  font:600 var(--t-xs)/1 var(--sans);
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-right:4px;
+}
+.stack span{
+  font:600 var(--t-xs)/1 var(--mono);
+  letter-spacing:.03em;
+  padding:7px 11px;border-radius:7px;
+  background:var(--surface-3);
+  border:1px solid var(--line);
+  color:var(--ink-2);
+}
+
+/* footer */
+footer{
+  border-top:1px solid var(--line);
+  padding:var(--s4) 0 var(--s5);
+  color:var(--muted);
+  font-size:.9rem;
+}
+.footer-inner{
+  display:flex;flex-wrap:wrap;gap:var(--s3);
+  justify-content:space-between;align-items:flex-start;
+}
+footer p{max-width:62ch;margin:0}
+.footer-brand{
+  display:inline-flex;align-items:center;gap:8px;
+  font-weight:700;color:var(--ink);font-size:.95rem;
+  margin-bottom:8px;
+}
+.footer-brand .brand-mark{width:24px;height:24px;border-radius:7px}
+.footer-brand .brand-mark svg{width:13px;height:13px}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(16px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
+@media (prefers-reduced-motion:reduce){
+  .reveal,.reveal.in{opacity:1;transform:none;transition:none}
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width:960px){
+  .console{grid-template-columns:1fr}
+  .form-pane{border-right:0;border-bottom:1px solid var(--line)}
+  .grid-3{grid-template-columns:repeat(2,1fr)}
+  .log{max-height:260px}
+}
+@media (max-width:700px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+  .stat{padding:11px 13px}
+  .stat.done::after{left:13px;right:13px}
+  .toolbar{gap:7px}
+  .speed{order:5}
+  .toolbar .btn{flex:1 1 auto}
+  .ba{padding:13px 15px}
+  .criteria{padding:var(--s3)}
+}
+@media (max-width:420px){
+  .toolbar .btn{font-size:.8rem;padding:0 10px}
+  .tag{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="wrap">
 
-<header class="top">TicketForge <span>by Vikas Singh</span></header>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2.5 2.5 0 0 0 0-5Z"/>
+          <path d="M13 5v2M13 11v2M13 17v2"/>
+        </svg>
+      </span>
+      TicketForge <em>by Vikas Singh</em>
+    </a>
+    <nav class="nav-links" aria-label="Page sections">
+      <a href="#demo">Demo</a>
+      <a href="#problem">Problem</a>
+      <a href="#how">How it works</a>
+      <a href="#scale">Scale</a>
+      <a href="#delivery">Delivery</a>
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+      </svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
 
 <main id="main">
-<div class="hero">
-  <h1>Watch an Excel sheet file its own Lenovo tickets.</h1>
-  <p class="lede">Press the buttons below. This is TicketForge on five sample laptops: it fills the Lenovo form, writes each Case ID back into the row, and the next day pulls the repair status into the same sheet.</p>
 
-  <div class="sheet" id="sheet">
-    <div class="bar">
-      <b>hardware_tracker.xlsx</b>
-      <small>sample data</small>
-      <span class="day" id="day">Day 1</span>
-      <button class="btn fill" id="run" type="button">Run batch</button>
-      <button class="btn" id="next" type="button" disabled>Next day</button>
-      <button class="btn" id="reset" type="button">Reset</button>
+<!-- ============================ HERO ============================ -->
+<div class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot" aria-hidden="true"></span> Automation case study</div>
+
+    <h1>A spreadsheet that creates Lenovo warranty tickets.</h1>
+
+    <p class="lede">
+      TicketForge reads hardware rows from Excel, opens the Lenovo service portal in Selenium,
+      submits a warranty claim for each row, and writes the returned Case ID back into the sheet.
+      A second script updates repair status the next day.
+    </p>
+
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#demo">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Open the demo
+      </a>
+      <a class="btn btn-ghost" href="#problem">Read the case study</a>
     </div>
-    <div class="stats">
-      <div class="stat"><b id="s1">0 of 5</b><span>Tickets filed</span></div>
-      <div class="stat"><b id="s2">0 of 5</b><span>Case IDs written back</span></div>
-      <div class="stat"><b id="s3">0 of 5</b><span>Statuses synced</span></div>
+
+    <div class="hero-meta">
+      <span>Python</span><span class="sep">·</span>
+      <span>Selenium</span><span class="sep">·</span>
+      <span>Excel</span><span class="sep">·</span>
+      <span>5 sample assets</span>
     </div>
-    <div class="scroller" tabindex="0" role="region" aria-label="Sample hardware tracker, scrollable">
-      <table>
-        <caption class="sr">Sample hardware tracker</caption>
-        <thead><tr><th scope="col">Serial</th><th scope="col">Issue</th><th scope="col">User is at</th><th scope="col">Dispatch</th><th scope="col">Case ID</th><th scope="col">Status</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-    <div class="console">
-      <div class="form" aria-hidden="true">
-        <div class="fh"><span id="fh"></span><span id="fc"></span></div>
-        <div class="fg" id="fg"></div>
+
+    <!-- ===================== DEMO ===================== -->
+    <div class="demo-shell" id="demo">
+      <div class="app">
+        <div class="titlebar">
+          <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span class="fname">hardware_tracker.xlsx</span>
+          <span class="tag">Sample data</span>
+        </div>
+
+        <div class="toolbar">
+          <span class="day" id="day">Day 1</span>
+          <span class="spacer"></span>
+
+          <div class="speed" role="group" aria-label="Demo speed">
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2" aria-pressed="false">2×</button>
+            <button type="button" data-speed="4" aria-pressed="false">4×</button>
+          </div>
+
+          <button class="btn btn-solid" id="run" type="button">Run batch</button>
+          <button class="btn btn-line" id="next" type="button" disabled>Next day</button>
+          <button class="btn btn-line" id="reset" type="button">Reset</button>
+        </div>
+
+        <div class="progress"><i id="prog"></i></div>
+
+        <div class="stats">
+          <div class="stat" id="stat-filed"><b id="s1">0 of 5</b><span>Tickets filed</span></div>
+          <div class="stat" id="stat-written"><b id="s2">0 of 5</b><span>Case IDs written back</span></div>
+          <div class="stat" id="stat-synced"><b id="s3">0 of 5</b><span>Statuses synced</span></div>
+        </div>
+
+        <div class="scroller" tabindex="0" role="region" aria-label="Sample hardware tracker, horizontally scrollable">
+          <table>
+            <caption class="sr">Sample hardware tracker — click a row to preview its data</caption>
+            <thead>
+              <tr>
+                <th scope="col">Serial</th>
+                <th scope="col">Issue</th>
+                <th scope="col">User is at</th>
+                <th scope="col">Dispatch</th>
+                <th scope="col">Case ID</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <div class="console">
+          <div class="form-pane">
+            <div class="form-head">
+              <strong id="form-title">Lenovo Service Portal — sample form</strong>
+              <span id="form-count">0 of 16 fields</span>
+            </div>
+            <div class="form-grid" id="form-grid" aria-hidden="true"></div>
+          </div>
+          <div class="log" id="log" role="log" aria-label="Run log">
+            <div class="d">Waiting. Press “Run batch” to create tickets.</div>
+          </div>
+        </div>
       </div>
-      <div class="log" id="log" role="log" aria-live="off" aria-label="Run log"><div class="d">Waiting. Press “Run batch” to create tickets.</div></div>
+
+      <p class="demo-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>
+        </svg>
+        <span>Sample data only. Everything here runs in your browser; a production version would drive the Lenovo portal with Selenium.</span>
+      </p>
+      <p class="sr" id="live" role="status" aria-live="polite"></p>
     </div>
   </div>
-  <p class="sr" id="sr" role="status"></p>
-  <p class="note">Everything on this page is sample data and runs in your browser. The real tool drives the Lenovo portal with Selenium.</p>
 </div>
 
-<section aria-labelledby="why">
-  <h2 id="why">Why it exists</h2>
-  <div class="two">
-    <div><b>Creating tickets was typing</b>Faulty motherboards and power faults need a Lenovo warranty claim. Each claim meant 15+ fields by hand: serial number, issue, contact, dispatch address. Around 30 or more tickets a month.</div>
-    <div><b>Tracking tickets was logging in</b>Every day, someone opened the portal to see whether the technician had visited and whether the part was changed. A wrong dispatch address sent the technician to the wrong place.</div>
-  </div>
-  <div class="ba"><span>Before: <s>15+ fields by hand</s> <s>daily portal login</s></span><span>After: one command to create, one command to sync</span></div>
-</section>
+<!-- ============================ PROBLEM ============================ -->
+<section id="problem" aria-labelledby="problem-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">01 — The problem</div>
+      <h2 id="problem-h">The repetitive work</h2>
+      <p>Every faulty motherboard or power fault needs a Lenovo warranty claim. The form has more than 15 fields, and the team files roughly 30 claims a month. Someone also has to check the portal each day to see whether a technician has visited or a part has been replaced.</p>
+    </div>
 
-<section aria-labelledby="run-h">
-  <h2 id="run-h">What happens on each run</h2>
-  <ol class="flow">
-    <li><b>Read the tracker</b><span>Serial number, issue, and dispatch location come from each Excel row.</span></li>
-    <li><b>Log in to the portal</b><span>Selenium controls a real browser, clicking and typing like a person would.</span></li>
-    <li><b>Fill the form and submit</b><span>Every field is filled from the row, then the ticket is submitted.</span></li>
-    <li><b>Write the Case ID back</b><span>Lenovo returns an ID such as #4010892211. The script captures it into the same row.</span></li>
-    <li><b>Sync status the next day</b><span>Each active ticket is opened, its status read, and the sheet updated.</span></li>
-  </ol>
-</section>
+    <div class="grid-2">
+      <article class="card card-bar reveal">
+        <h3>Creating claims was manual data entry</h3>
+        <p>Each claim required a serial number, issue, contact details and dispatch address. A mistyped postcode could delay the repair.</p>
+      </article>
+      <article class="card card-bar reveal">
+        <h3>Status checks required a daily login</h3>
+        <p>If nobody checked the portal, the tracker went out of date.</p>
+      </article>
+    </div>
 
-<section aria-labelledby="three">
-  <h2 id="three">Three things it handles</h2>
-  <div class="features">
-    <div><h3>Bulk ingestion</h3><p>The whole list runs in one go instead of one ticket at a time.</p></div>
-    <div><h3>Dynamic routing</h3><p>Users at home or at a branch get an alternate dispatch address, read from each row so nobody edits the form. Try it above: those rows and their address fields turn amber.</p></div>
-    <div><h3>Next-day sync</h3><p>Status for every active ticket lands in Excel with no manual login.</p></div>
-  </div>
-</section>
-
-<section aria-labelledby="design">
-  <h2 id="design">Design choices</h2>
-  <div class="features two-up">
-    <div><h3>Excel remains familiar</h3><p>Excel can remain the intake and export format, while a central database becomes the permanent record for assets, tickets, Case IDs and status history.</p></div>
-    <div><h3>It drives the real portal</h3><p>Selenium operates the portal’s own pages, clicking and typing the way a person would, so nothing on the portal side has to change.</p></div>
+    <div class="ba reveal">
+      <span class="before">Before: <s>15+ fields typed by hand</s> · <s>a daily portal login</s></span>
+      <span class="arrow" aria-hidden="true">→</span>
+      <span class="after"><span class="tick" aria-hidden="true">✓</span> After: one command to submit claims, one to update status</span>
+    </div>
   </div>
 </section>
 
-<section aria-labelledby="scale">
-  <h2 id="scale">What it will take to run this reliably at company scale</h2>
-  <p>These are the controls I recommend adding before a wider rollout. They are implementation commitments, not claims that every control is already present in the current demo.</p>
-  <div class="acc">
-    <details><summary>1. Stop duplicate tickets</summary><p>Before submitting, the system will check the database for an existing open ticket using the asset serial number, issue category and a defined time window. Each request will also receive a unique idempotency key. If the same row is processed again, TicketForge will reuse the existing Case ID instead of creating another ticket. An operator can override the check with a recorded reason when a genuinely new case is required.</p></details>
-    <details><summary>2. Recover safely from portal errors</summary><p>Portal actions will have explicit timeouts, page and confirmation checks, and limited retries with increasing wait times. If submission times out after the portal may have accepted it, the job will first search for the resulting case before trying again. Unresolved jobs will move to an exception queue for review; the system will not blindly resubmit.</p></details>
-    <details><summary>3. Keep credentials out of files and code</summary><p>Portal credentials will be stored in an approved secrets vault or enterprise credential manager, not in Excel, source code or configuration files. Access will be restricted to the automation service account, secrets will be masked in logs, and rotation will follow company IT policy. MFA and portal terms will be respected; no attempt will be made to bypass security controls.</p></details>
-    <details><summary>4. Use a proper database</summary><p>PostgreSQL will hold the permanent records for assets, requests, tickets, Case IDs, status changes and job results. Excel will be used for controlled import/export only. Unique constraints and transactions will protect records from accidental duplication or partial updates, with scheduled backups and a tested restore process.</p></details>
-    <details><summary>5. Keep an audit trail</summary><p>Every run will record who or what started it, the asset reference, time, action, result, portal Case ID, retry count and any exception. Logs will be searchable and access-controlled, with sensitive fields and credentials excluded. Changes to ticket data and manual overrides will retain the user, timestamp and reason.</p></details>
-    <details><summary>6. Prove it in an authorized test environment</summary><p>The pilot will use a Lenovo-approved test account or designated low-risk test assets, with permission from the portal owner. We will demonstrate the complete flow: read an approved asset, check for duplicates, submit the request, capture the actual Case ID, store it in the database, and retrieve the real status. The demo will show timestamps, run logs and the resulting portal record. Sample data on this webpage is only a UI walkthrough, not proof of a live portal transaction.</p></details>
+<!-- ============================ HOW ============================ -->
+<section id="how" aria-labelledby="how-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">02 — How it runs</div>
+      <h2 id="how-h">What the two scripts do</h2>
+      <p>The submission script handles rows one at a time. The status script only reads existing tickets. The steps below light up while the demo above is running.</p>
+    </div>
+
+    <ol class="timeline" id="timeline">
+      <li><b>Read the Excel row</b><span>The script reads the serial number, issue and dispatch location from the tracker.</span></li>
+      <li><b>Open the portal</b><span>Selenium signs in with the service account and opens the warranty claim form.</span></li>
+      <li><b>Submit the claim</b><span>It fills the form from the row. If the user is at a branch or at home, it uses the alternate dispatch address stored in that row.</span></li>
+      <li><b>Save the Case ID</b><span>After Lenovo accepts the claim, the script reads the Case ID and writes it to the same row.</span></li>
+      <li><b>Sync status the next day</b><span>A second script opens each active Case ID, reads its status and updates the sheet. It does not submit anything.</span></li>
+    </ol>
   </div>
 </section>
 
-<section aria-labelledby="deliver">
-  <h2 id="deliver">How I would deliver the changes</h2>
-  <ol class="flow">
-    <li><b>Foundation</b><span>Confirm the approved portal workflow and test access; define the ticket matching rules; create the database schema and service account.</span></li>
-    <li><b>Reliability controls</b><span>Implement duplicate checks, safe retry and exception handling, secrets-vault integration, structured logs and audit history.</span></li>
-    <li><b>End-to-end pilot</b><span>Run a small, agreed test batch in the authorized environment. Verify each Case ID and status against the portal and record the results.</span></li>
-    <li><b>Production readiness review</b><span>Review access permissions, backup and recovery, monitoring, failure procedures and operational ownership with IT and the portal owner.</span></li>
-  </ol>
-  <p><b>Acceptance criteria:</b> no duplicate submission during repeat-run tests; no blind retry after an uncertain submission; credentials absent from workbook, source and logs; every action traceable; and a successful, independently verified end-to-end test in the authorized environment.</p>
+<!-- ============================ CAPABILITIES ============================ -->
+<section id="handles" aria-labelledby="handles-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">03 — Functions</div>
+      <h2 id="handles-h">Main functions</h2>
+    </div>
+
+    <div class="grid-3">
+      <article class="card reveal">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5"/>
+          </svg>
+        </div>
+        <h3>Batch submission</h3>
+        <p>The script processes the whole tracker in one run and logs each row.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/>
+            <path d="M6 8.5V13a3 3 0 0 0 3 3h6.5"/><path d="m13 13.5 3 2.5-3 2.5"/>
+          </svg>
+        </div>
+        <h3>Dispatch routing</h3>
+        <p>The row decides whether the claim uses the registered office or an alternate address. The demo marks those fields in amber.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/>
+          </svg>
+        </div>
+        <h3>Status updates</h3>
+        <p>The status script writes technician and repair status back to Excel without a manual portal login.</p>
+      </article>
+    </div>
+  </div>
 </section>
 
-<section aria-labelledby="limits">
-  <h2 id="limits">Limitations</h2>
-  <ul class="limits">
-    <li>It depends on the portal’s page layout. If Lenovo changes the UI, the selectors need updating.</li>
-    <li>It needs your own authorized portal account.</li>
-  </ul>
-  <p class="stack">Python, Selenium, Excel</p>
+<!-- ============================ DESIGN ============================ -->
+<section id="design" aria-labelledby="design-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">04 — Design</div>
+      <h2 id="design-h">Design decisions</h2>
+    </div>
+
+    <div class="grid-2">
+      <article class="card reveal">
+        <h3>Excel remains the input format</h3>
+        <p>Teams can keep using Excel for intake and export. PostgreSQL stores the permanent record of assets, tickets, Case IDs and status history.</p>
+      </article>
+      <article class="card reveal">
+        <h3>Selenium uses the existing portal</h3>
+        <p>The automation clicks and types in the same pages a person uses. Lenovo does not need to provide an API.</p>
+      </article>
+    </div>
+  </div>
 </section>
+
+<!-- ============================ SCALE ============================ -->
+<section id="scale" aria-labelledby="scale-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">05 — Scale</div>
+      <h2 id="scale-h">Controls for a wider rollout</h2>
+      <p>The demo shows the workflow. A production rollout needs the following controls. Some are not implemented in the demo.</p>
+    </div>
+
+    <div class="accordion reveal">
+      <details>
+        <summary>1. Prevent duplicate claims</summary>
+        <div class="body">Before submission, the script checks PostgreSQL for an open ticket with the same serial number and issue within a set time window. Each request has an idempotency key. If a row is processed twice, the script reuses the existing Case ID. An operator can override the check and must record a reason.</div>
+      </details>
+      <details>
+        <summary>2. Handle portal errors</summary>
+        <div class="body">Each portal action has a timeout, a page check and a confirmation check. Retries are limited and use increasing delays. If a submission times out after the portal may have accepted it, the script searches for the case before retrying. Unresolved jobs go to an exception queue.</div>
+      </details>
+      <details>
+        <summary>3. Protect credentials</summary>
+        <div class="body">Credentials live in a secrets vault or enterprise credential manager. They are not stored in Excel, source code or config files. Only the automation service account can read them. Logs mask secrets. The workflow respects MFA and portal terms.</div>
+      </details>
+      <details>
+        <summary>4. Use a database</summary>
+        <div class="body">PostgreSQL stores assets, requests, tickets, Case IDs, status changes and job results. Excel is for import and export. Constraints and transactions prevent duplicate or partial records. Backups are scheduled and restores are tested.</div>
+      </details>
+      <details>
+        <summary>5. Keep an audit trail</summary>
+        <div class="body">Each run records the initiator, asset, timestamp, action, result, Case ID, retry count and exceptions. Logs exclude secrets and sensitive fields. Manual overrides record the user, time and reason.</div>
+      </details>
+      <details>
+        <summary>6. Test in an authorized environment</summary>
+        <div class="body">The pilot uses a Lenovo-approved test account or low-risk test assets, with permission from the portal owner. The test covers duplicate check, submission, Case ID capture, database write and status retrieval. The sample data on this page is a UI walkthrough. It is not evidence of a live portal transaction.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DELIVERY ============================ -->
+<section id="delivery" aria-labelledby="delivery-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">06 — Delivery</div>
+      <h2 id="delivery-h">Rollout plan</h2>
+      <p>The work has four stages. Each stage ends with a reviewable result.</p>
+    </div>
+
+    <ol class="timeline">
+      <li><b>Foundation</b><span>Confirm the approved portal workflow and test access. Define ticket-matching rules. Create the database schema and service account.</span></li>
+      <li><b>Reliability</b><span>Add duplicate checks, safe retries, exception handling, secrets-vault integration, structured logs and audit history.</span></li>
+      <li><b>Pilot</b><span>Run an agreed test batch in the authorized environment. Check each Case ID and status against the portal and record the results.</span></li>
+      <li><b>Readiness review</b><span>Review permissions, backup and recovery, monitoring, failure procedures and ownership with IT and the portal owner.</span></li>
+    </ol>
+
+    <div class="criteria reveal">
+      <h3>Acceptance criteria</h3>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg> A repeat run creates no duplicate claim.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg> The script does not retry a submission when the result is unknown.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg> Workbook, source code and logs contain no credentials.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg> Each action has a user or service account, timestamp and result.</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg> An authorized end-to-end test passes and is independently checked.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ LIMITS ============================ -->
+<section id="limits" aria-labelledby="limits-h">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">07 — Limits</div>
+      <h2 id="limits-h">Limitations</h2>
+    </div>
+
+    <ul class="limits reveal">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 17.1A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.9L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <span>The script depends on the portal's page layout. A UI change requires selector updates.</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.4 17.1A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.9L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <span>It needs an authorized portal account. It does not bypass login, MFA or access controls.</span>
+      </li>
+    </ul>
+
+    <div class="stack reveal">
+      <span class="stack-label">Stack</span>
+      <span>Python</span><span>Selenium</span><span>Excel</span>
+    </div>
+  </div>
+</section>
+
 </main>
 
+<!-- ============================ FOOTER ============================ -->
 <footer>
-  <p>TicketForge is an unofficial tool and is not affiliated with or endorsed by Lenovo. Serial numbers, Case IDs, and output on this page are sample data.</p>
+  <div class="wrap footer-inner">
+    <div>
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2.5 2.5 0 0 0 0-5Z"/>
+            <path d="M13 5v2M13 11v2M13 17v2"/>
+          </svg>
+        </span>
+        TicketForge
+      </div>
+      <p>TicketForge is an unofficial tool by Vikas Singh. It is not affiliated with or endorsed by Lenovo. All serial numbers, Case IDs and output on this page are sample data.</p>
+    </div>
+  </div>
 </footer>
-</div>
 
 <script>
 (() => {
   "use strict";
-  const DATA = [
-    {s:"PF-SAMPLE-01",i:"Motherboard failure",at:"Home",alt:true,id:"#4010892211",st:"Part replaced"},
-    {s:"PF-SAMPLE-02",i:"Won’t power on",at:"Office",alt:false,id:"#4010892214",st:"Technician visited"},
-    {s:"PF-SAMPLE-03",i:"Motherboard failure",at:"Branch",alt:true,id:"#4010892219",st:"Technician assigned"},
-    {s:"PF-SAMPLE-04",i:"Power port fault",at:"Office",alt:false,id:"#4010892225",st:"Part replaced"},
-    {s:"PF-SAMPLE-05",i:"Won’t power on",at:"Home",alt:true,id:"#4010892230",st:"Technician visited"}
+
+  /* ---------------------------------------------------------
+     Data
+     --------------------------------------------------------- */
+  const ROWS = [
+    { serial:"PF-SAMPLE-01", issue:"Motherboard failure", site:"Home",   alt:true,  caseId:"#4010892211", status:"Part replaced",        final:true  },
+    { serial:"PF-SAMPLE-02", issue:"Won’t power on",      site:"Office", alt:false, caseId:"#4010892214", status:"Technician visited",   final:false },
+    { serial:"PF-SAMPLE-03", issue:"Motherboard failure", site:"Branch", alt:true,  caseId:"#4010892219", status:"Technician assigned",  final:false },
+    { serial:"PF-SAMPLE-04", issue:"Power port fault",    site:"Office", alt:false, caseId:"#4010892225", status:"Part replaced",        final:true  },
+    { serial:"PF-SAMPLE-05", issue:"Won’t power on",      site:"Home",   alt:true,  caseId:"#4010892230", status:"Technician visited",   final:false }
   ];
-  const $ = id => document.getElementById(id);
-  const rows = $("rows"), log = $("log"), runB = $("run"), nextB = $("next"), resetB = $("reset");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const gap = reduce ? 0 : 640;
-  let timers = [], busy = false, cnt = {f:0,w:0,s:0}, cells = [];
 
-  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-  const clear = () => { timers.forEach(clearTimeout); timers = []; busy = false; };
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-  const chip = (cls, text) => el("span", "chip " + cls, text);
-  const put = (td, content) => { td.className = "pop"; td.replaceChildren(content); };
-  const live = n => document.querySelectorAll("ol.flow")[0].querySelectorAll("li").forEach((li, i) => li.classList.toggle("live", i === n));
-  const mark = n => [...rows.children].forEach((tr, i) => tr.classList.toggle("cur", i === n));
-  const stat = (id, n) => { const e = $(id); e.textContent = n + " of " + DATA.length; e.parentNode.classList.toggle("on", n > 0); };
-  const line = (t, c) => { log.appendChild(el("div", c, t)); log.scrollTop = log.scrollHeight; };
-  const announce = t => { $("sr").textContent = t; };
-  const chain = (steps, done) => { let t = 0; steps.forEach(f => { t += gap; later(f, t); }); later(done, t + gap); };
+  const FIELD_LABELS = [
+    "Serial number","Product","Issue","Severity",
+    "Contact name","Phone","Email","Company",
+    "Country","Support location","Dispatch address","City",
+    "Postal code","Service type","Warranty","Preferred slot"
+  ];
 
-  const fields = d => [["Serial number",d.s],["Product","Laptop"],["Issue",d.i],["Severity","System down"],["Contact name","Sample User"],["Phone","+00 000 000 000"],["Email","user@example.com"],["Company","Sample Co."],["Country","Sample Country"],["Support location",d.alt?"Alternate Site":"Default Site"],["Dispatch address",d.alt?"Alternate address":"Registered office"],["City","Sample City"],["Postal code","000000"],["Service type","On-site repair"],["Warranty","In warranty"],["Preferred slot","Next business day"]];
+  const fieldsFor = row => [
+    row.serial, "Laptop", row.issue, "System down",
+    "Sample User", "+00 000 000 000", "user@example.com", "Sample Co.",
+    "Sample Country",
+    row.alt ? "Alternate Site" : "Default Site",
+    row.alt ? "Alternate address" : "Registered office",
+    "Sample City", "000000", "On-site repair", "In warranty", "Next business day"
+  ];
 
+  /* ---------------------------------------------------------
+     Refs & state
+     --------------------------------------------------------- */
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const tbody    = $("#rows");
+  const logEl    = $("#log");
+  const progEl   = $("#prog");
+  const dayEl    = $("#day");
+  const runBtn   = $("#run");
+  const nextBtn  = $("#next");
+  const resetBtn = $("#reset");
+  const formGrid = $("#form-grid");
+  const formTitle= $("#form-title");
+  const formCount= $("#form-count");
+  const liveEl   = $("#live");
+  const timeline = [...document.querySelectorAll("#timeline li")];
+  const sEls     = { filed:$("#s1"), written:$("#s2"), synced:$("#s3") };
+  const statEls  = { filed:$("#stat-filed"), written:$("#stat-written"), synced:$("#stat-synced") };
+
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const state = {
+    busy:false,
+    filed:0,
+    written:0,
+    synced:0,
+    selected:0,
+    runToken:0
+  };
+  let speed = 1;
+
+  /* ---------------------------------------------------------
+     Helpers
+     --------------------------------------------------------- */
+  const sleep = ms => new Promise(res => setTimeout(res, Math.max(0, ms / speed)));
+
+  const esc = str => String(str).replace(/[&<>"]/g, c => (
+    { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]
+  ));
+
+  function logLine(text, cls) {
+    const div = document.createElement("div");
+    if (cls) div.className = cls;
+    div.textContent = text;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function announce(text) { liveEl.textContent = text; }
+
+  function setProgress(pct) {
+    progEl.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  }
+
+  function setStat(key, value) {
+    sEls[key].textContent = value + " of " + ROWS.length;
+    statEls[key].classList.toggle("done", value > 0);
+  }
+
+  function markCurrent(index) {
+    [...tbody.children].forEach((tr, i) => tr.classList.toggle("cur", i === index));
+  }
+
+  function setTimelineStep(index) {
+    timeline.forEach((li, i) => li.classList.toggle("live", i === index));
+  }
+
+  function flashCell(td) {
+    td.classList.remove("flash");
+    void td.offsetWidth;   /* force reflow */
+    td.classList.add("flash");
+  }
+
+  function setCell(tr, selector, html) {
+    const td = tr.querySelector(selector);
+    td.innerHTML = html;
+    flashCell(td);
+  }
+
+  const chipHtml = (cls, text) => '<span class="chip ' + cls + '">' + esc(text) + '</span>';
+  const dashHtml = () => '<span class="dash">—</span>';
+
+  /* ---------------------------------------------------------
+     Build the table
+     --------------------------------------------------------- */
+  function buildTable() {
+    tbody.innerHTML = "";
+    ROWS.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      tr.dataset.index = i;
+      tr.innerHTML =
+        '<th scope="row">' + esc(row.serial) + '</th>' +
+        '<td>' + esc(row.issue) + '</td>' +
+        '<td>' + esc(row.site) + '</td>' +
+        '<td class="cell-dispatch">' + dashHtml() + '</td>' +
+        '<td class="cell-case">' + dashHtml() + '</td>' +
+        '<td class="cell-status">' + dashHtml() + '</td>';
+
+      tr.addEventListener("click", () => {
+        if (state.busy) return;
+        selectRow(i);
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     Build the form preview
+     --------------------------------------------------------- */
   function buildForm() {
-    const g = $("fg"); g.replaceChildren();
-    fields(DATA[0]).forEach(x => { const e = el("div", "f"); e.append(el("small", "", x[0]), el("span")); g.append(e); });
-    $("fh").textContent = "Lenovo Service Portal, sample form. Waiting for the first ticket.";
-    $("fc").textContent = "0 of " + g.children.length + " fields filled";
-  }
-  function draw() {
-    rows.replaceChildren(); cells = []; buildForm();
-    DATA.forEach(d => {
-      const tr = el("tr"), th = el("th", "", d.s); th.scope = "row";
-      tr.append(th, el("td", "", d.i), el("td", "", d.at));
-      cells.push([0,1,2].map(() => { const td = el("td", "empty", "-"); tr.append(td); return td; }));
-      rows.append(tr);
+    formGrid.innerHTML = "";
+    FIELD_LABELS.forEach(label => {
+      const div = document.createElement("div");
+      div.className = "field";
+      div.innerHTML = "<small>" + esc(label) + "</small><span></span>";
+      formGrid.appendChild(div);
     });
-  }
-  function fillForm(d, n) {
-    const els = $("fg").children, f = fields(d), fc = $("fc"); let k = 0;
-    $("fh").textContent = "Filling ticket " + (n + 1) + " of " + DATA.length;
-    [...els].forEach(e => { e.className = "f"; e.lastChild.textContent = ""; });
-    fc.textContent = "0 of " + f.length + " fields filled";
-    f.forEach((x, i) => {
-      const go = () => { els[i].className = "f on" + (d.alt && (i === 9 || i === 10) ? " alt" : ""); els[i].lastChild.textContent = x[1]; fc.textContent = (++k) + " of " + f.length + " fields filled"; };
-      reduce ? go() : later(go, i * 30);
-    });
+    clearForm();
   }
 
+  function clearForm() {
+    [...formGrid.children].forEach(f => {
+      f.className = "field";
+      f.lastElementChild.textContent = "";
+    });
+    formTitle.textContent = "Lenovo Service Portal — sample form";
+    formCount.textContent = "0 of " + FIELD_LABELS.length + " fields";
+  }
+
+  function selectRow(index) {
+    state.selected = index;
+    const row = ROWS[index];
+
+    [...tbody.children].forEach((tr, i) => tr.classList.toggle("sel", i === index));
+
+    const values = fieldsFor(row);
+    [...formGrid.children].forEach((f, i) => {
+      const isAlt = row.alt && (i === 9 || i === 10);
+      f.className = "field on" + (isAlt ? " alt" : "");
+      f.lastElementChild.textContent = values[i];
+    });
+
+    formTitle.textContent = "Preview · " + row.serial;
+    formCount.textContent = FIELD_LABELS.length + " of " + FIELD_LABELS.length + " fields";
+  }
+
+  /* ---------------------------------------------------------
+     Animated form fill during a run
+     --------------------------------------------------------- */
+  async function fillForm(row, index, token) {
+    const values = fieldsFor(row);
+    const cells = [...formGrid.children];
+
+    cells.forEach(f => {
+      f.className = "field";
+      f.lastElementChild.textContent = "";
+    });
+    formTitle.textContent = "Filling ticket " + (index + 1) + " of " + ROWS.length;
+    formCount.textContent = "0 of " + FIELD_LABELS.length + " fields";
+
+    [...tbody.children].forEach((tr, i) => tr.classList.toggle("sel", i === index));
+
+    for (let i = 0; i < values.length; i++) {
+      if (token !== state.runToken) return false;
+      const isAlt = row.alt && (i === 9 || i === 10);
+      cells[i].className = "field on" + (isAlt ? " alt" : "");
+      cells[i].lastElementChild.textContent = values[i];
+      formCount.textContent = (i + 1) + " of " + FIELD_LABELS.length + " fields";
+      await sleep(reduceMotion ? 0 : 22);
+    }
+    return token === state.runToken;
+  }
+
+  /* ---------------------------------------------------------
+     Reset
+     --------------------------------------------------------- */
   function reset() {
-    clear(); draw(); cnt = {f:0,w:0,s:0};
-    ["s1","s2","s3"].forEach(id => stat(id, 0));
-    live(-1); mark(-1); $("day").textContent = "Day 1"; announce("");
-    log.replaceChildren(); line("Waiting. Press “Run batch” to create tickets.", "d");
-    runB.disabled = false; nextB.disabled = true;
-  }
-  function runBatch() {
-    if (busy) return;
-    busy = true; runB.disabled = true; nextB.disabled = true;
-    log.replaceChildren(); line("$ python ticketforge.py --batch hardware_tracker.xlsx", "c");
-    const steps = [
-      () => { live(0); line("Reading hardware_tracker.xlsx: " + DATA.length + " rows", "d"); },
-      () => { live(1); line("Logging in to the Lenovo Service Portal...", "d"); }
-    ];
-    DATA.forEach((d, n) => {
-      steps.push(() => {
-        mark(n); line("Processing " + (n + 1) + "/" + DATA.length, "d"); fillForm(d, n);
-        line("  Support Location: " + (d.alt ? "Alternate Site" : "Default Site"), d.alt ? "a" : "");
-        put(cells[n][0], chip(d.alt ? "alt" : "def", d.alt ? "Alternate Site" : "Default Site"));
-        live(2); stat("s1", ++cnt.f);
-      });
-      steps.push(() => {
-        line("  Case ID " + d.id + " written to Excel", "g");
-        $("fh").textContent = "Ticket " + (n + 1) + " submitted. Lenovo returned " + d.id;
-        put(cells[n][1], d.id); put(cells[n][2], chip("sub", "Submitted"));
-        live(3); stat("s2", ++cnt.w);
-      });
-    });
-    chain(steps, () => {
-      line("Done. " + DATA.length + " tickets created.", "g"); live(-1); mark(-1);
-      announce(DATA.length + " sample tickets created and Case IDs written to the sheet.");
-      busy = false; nextB.disabled = false; nextB.focus();
-    });
-  }
-  function nextDay() {
-    if (busy) return;
-    busy = true; nextB.disabled = true;
-    line("\u00a0"); $("day").textContent = "Day 2"; live(4);
-    $("fh").textContent = "Next day: the portal is only read, never filled. Statuses go straight to the sheet.";
-    $("fc").textContent = "";
-    line("$ python ticketforge.py --check-status", "c"); line("Checking " + DATA.length + " active tickets...", "d");
-    const steps = DATA.map((d, n) => () => {
-      mark(n);
-      const fin = d.st === "Part replaced";
-      put(cells[n][2], chip(fin ? "fin" : "mid", d.st));
-      line("  " + d.id + ": " + d.st); stat("s3", ++cnt.s);
-    });
-    chain(steps, () => {
-      line(DATA.length + " active tickets synced.", "g"); live(-1); mark(-1);
-      announce(DATA.length + " ticket statuses synced to the sheet."); busy = false;
-    });
+    state.runToken++;              /* cancels any in-flight run */
+    state.busy = false;
+    state.filed = state.written = state.synced = 0;
+    state.selected = 0;
+
+    setProgress(0);
+    setStat("filed", 0);
+    setStat("written", 0);
+    setStat("synced", 0);
+
+    dayEl.textContent = "Day 1";
+    markCurrent(-1);
+    setTimelineStep(-1);
+    clearForm();
+    buildTable();
+    selectRow(0);
+
+    logEl.innerHTML = "";
+    logLine("Waiting. Press “Run batch” to create tickets.", "d");
+
+    runBtn.disabled = false;
+    nextBtn.disabled = true;
+    announce("Demo reset.");
   }
 
-  runB.addEventListener("click", runBatch);
-  nextB.addEventListener("click", nextDay);
-  resetB.addEventListener("click", reset);
-  draw();
+  /* ---------------------------------------------------------
+     Run batch
+     --------------------------------------------------------- */
+  async function runBatch() {
+    if (state.busy) return;
+
+    const token = ++state.runToken;
+    state.busy = true;
+    runBtn.disabled = true;
+    nextBtn.disabled = true;
+    setProgress(0);
+
+    logEl.innerHTML = "";
+    logLine("$ python ticketforge.py --batch hardware_tracker.xlsx", "c");
+
+    setTimelineStep(0);
+    await sleep(420);
+    if (token !== state.runToken) return;
+    logLine("Reading hardware_tracker.xlsx: " + ROWS.length + " rows", "d");
+
+    setTimelineStep(1);
+    await sleep(420);
+    if (token !== state.runToken) return;
+    logLine("Logging in to the Lenovo Service Portal…", "d");
+    await sleep(340);
+    if (token !== state.runToken) return;
+
+    for (let i = 0; i < ROWS.length; i++) {
+      const row = ROWS[i];
+      const tr = tbody.children[i];
+
+      markCurrent(i);
+      logLine("Processing " + (i + 1) + "/" + ROWS.length + " · " + row.serial, "d");
+
+      /* --- fill the form --- */
+      setTimelineStep(2);
+      const ok = await fillForm(row, i, token);
+      if (!ok) return;
+
+      logLine(
+        "  Support location: " + (row.alt ? "Alternate Site" : "Default Site"),
+        row.alt ? "a" : ""
+      );
+
+      setCell(tr, ".cell-dispatch", chipHtml(row.alt ? "alt" : "def", row.alt ? "Alternate Site" : "Default Site"));
+      setStat("filed", ++state.filed);
+      setProgress(((i + 0.5) / ROWS.length) * 100);
+      await sleep(300);
+      if (token !== state.runToken) return;
+
+      /* --- write the case id back --- */
+      setTimelineStep(3);
+      logLine("  Case ID " + row.caseId + " written to Excel", "g");
+      formTitle.textContent = "Ticket " + (i + 1) + " submitted — Lenovo returned " + row.caseId;
+      formCount.textContent = FIELD_LABELS.length + " of " + FIELD_LABELS.length + " fields";
+
+      setCell(tr, ".cell-case", esc(row.caseId));
+      setCell(tr, ".cell-status", chipHtml("sub", "Submitted"));
+      setStat("written", ++state.written);
+      setProgress(((i + 1) / ROWS.length) * 100);
+      await sleep(300);
+      if (token !== state.runToken) return;
+    }
+
+    /* --- done --- */
+    setTimelineStep(-1);
+    markCurrent(-1);
+    logLine("Done. " + ROWS.length + " tickets created.", "g");
+    announce("All " + ROWS.length + " sample tickets created and Case IDs written back to the sheet.");
+
+    state.busy = false;
+    nextBtn.disabled = false;
+    nextBtn.focus();
+  }
+
+  /* ---------------------------------------------------------
+     Next day sync
+     --------------------------------------------------------- */
+  async function nextDay() {
+    if (state.busy) return;
+
+    const token = ++state.runToken;
+    state.busy = true;
+    nextBtn.disabled = true;
+    runBtn.disabled = true;
+    setProgress(0);
+
+    dayEl.textContent = "Day 2";
+    setTimelineStep(4);
+
+    logLine("\u00a0");
+    logLine("$ python ticketforge.py --check-status", "c");
+    logLine("Checking " + ROWS.length + " active tickets…", "d");
+
+    formTitle.textContent = "Next day — the portal is read, never filled. Statuses go straight to the sheet.";
+    formCount.textContent = "";
+    [...formGrid.children].forEach(f => { f.className = "field"; f.lastElementChild.textContent = ""; });
+
+    await sleep(420);
+    if (token !== state.runToken) return;
+
+    for (let i = 0; i < ROWS.length; i++) {
+      const row = ROWS[i];
+      const tr = tbody.children[i];
+
+      markCurrent(i);
+      setCell(tr, ".cell-status", chipHtml(row.final ? "fin" : "mid", row.status));
+      logLine("  " + row.caseId + ": " + row.status, row.final ? "g" : "");
+      setStat("synced", ++state.synced);
+      setProgress(((i + 1) / ROWS.length) * 100);
+
+      await sleep(320);
+      if (token !== state.runToken) return;
+    }
+
+    markCurrent(-1);
+    setTimelineStep(-1);
+    logLine("All " + ROWS.length + " active tickets synced.", "g");
+    announce("All " + ROWS.length + " ticket statuses synced into the sheet.");
+
+    state.busy = false;
+    runBtn.disabled = false;
+  }
+
+  /* ---------------------------------------------------------
+     Speed control
+     --------------------------------------------------------- */
+  document.querySelectorAll(".speed button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      speed = Number(btn.dataset.speed) || 1;
+      document.querySelectorAll(".speed button").forEach(b => {
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+    });
+  });
+
+  /* ---------------------------------------------------------
+     Theme
+     --------------------------------------------------------- */
+  const themeBtn = $("#theme-toggle");
+  themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("tf-theme", next); } catch (e) {}
+  });
+
+  /* ---------------------------------------------------------
+     Sticky nav border
+     --------------------------------------------------------- */
+  const nav = $("#nav");
+  const navObserver = new IntersectionObserver(
+    ([entry]) => nav.classList.toggle("stuck", !entry.isIntersecting),
+    { rootMargin: "-1px 0px 0px 0px", threshold: 0 }
+  );
+  navObserver.observe(document.createElement("div"));  /* placeholder */
+
+  /* simpler, reliable alternative */
+  const sentinel = document.createElement("div");
+  sentinel.style.cssText = "position:absolute;top:0;height:1px;width:1px;";
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([e]) => {
+    nav.classList.toggle("stuck", !e.isIntersecting);
+  }).observe(sentinel);
+
+  /* ---------------------------------------------------------
+     Scroll reveal
+     --------------------------------------------------------- */
+  const revealEls = document.querySelectorAll(".reveal");
+  if (reduceMotion) {
+    revealEls.forEach(el => el.classList.add("in"));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    revealEls.forEach(el => io.observe(el));
+  }
+
+  /* ---------------------------------------------------------
+     Wiring
+     --------------------------------------------------------- */
+  runBtn.addEventListener("click", runBatch);
+  nextBtn.addEventListener("click", nextDay);
+  resetBtn.addEventListener("click", reset);
+
+  /* Smooth scroll for nav links, accounting for sticky header */
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener("click", (ev) => {
+      const id = a.getAttribute("href");
+      if (!id || id === "#") return;
+      const target = document.querySelector(id);
+      if (!target) return;
+      ev.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+  });
+
+  /* ---------------------------------------------------------
+     Boot
+     --------------------------------------------------------- */
+  buildForm();
+  buildTable();
+  selectRow(0);
 })();
 </script>
 </body>
