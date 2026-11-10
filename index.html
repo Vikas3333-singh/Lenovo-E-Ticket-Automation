@@ -4,173 +4,198 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta name="description" content="TicketForge turns a hardware tracker in Excel into filed Lenovo warranty tickets, written-back Case IDs, and next-day status sync. Python and Selenium.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="TicketForge: watch an Excel sheet file its own Lenovo tickets">
 <meta property="og:description" content="Python and Selenium tool that files Lenovo warranty tickets from Excel, writes Case IDs back, and syncs status the next day. Interactive demo, sample data.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
 <title>TicketForge: watch an Excel sheet file its own Lenovo tickets</title>
-<meta name="description" content="TicketForge turns a hardware tracker in Excel into filed Lenovo warranty tickets, written-back Case IDs, and next-day status sync. Python and Selenium.">
 <style>
 :root{
-  --bg:#EDF1EE; --surface:#FFFFFF; --ink:#14201A; --muted:#51615A; --line:#CBD6CF;
-  --xl:#1D6F42; --xl-soft:#DDEEE4; --blue:#2457D6; --blue-soft:#E1E9FC; --amber:#9A6200; --amber-soft:#FBEBC8; --done:#1D6F42;
-  --head:#E4EBE6; --log-bg:#13201A; --log-ink:#D6E6DC; --log-dim:#7E9A8A;
+  --bg:#F1F4F0;--surface:#fff;--ink:#121D17;--muted:#4A5A52;--line:#C9D4CC;--head:#E4EBE6;
+  --xl:#17653A;--xl-soft:#DDEEE4;--on-xl:#fff;--blue:#2352C9;--blue-soft:#E1E9FC;--amber:#8A5700;--amber-soft:#FBEBC8;
+  --log-bg:#13201A;--log-ink:#D6E6DC;--log-dim:#8AA597;
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --t-sm:clamp(.8rem,.78rem + .1vw,.875rem);--t-base:clamp(1rem,.96rem + .2vw,1.0625rem);
+  --t-lg:clamp(1.2rem,1.1rem + .5vw,1.5rem);--t-xl:clamp(1.5rem,1.2rem + 1.4vw,2.1rem);--t-hero:clamp(2.2rem,1.4rem + 4.2vw,3.8rem);
+  --s1:.5rem;--s2:.75rem;--s3:1.125rem;--s4:1.75rem;--s5:3rem;--s6:4.5rem;
+  --r:10px;
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#0E1512; --surface:#16201B; --ink:#E4EEE8; --muted:#92A59B; --line:#2A3A32;
-    --xl:#5CC98B; --xl-soft:#173A29; --blue:#86A8FF; --blue-soft:#1B2A52; --amber:#F0B955; --amber-soft:#3B2D10; --done:#5CC98B;
-    --head:#1C2923; --log-bg:#09100D;
-  }
-}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0E1512;--surface:#16201B;--ink:#E4EEE8;--muted:#98ABA1;--line:#2A3A32;--head:#1C2923;
+  --xl:#5CC98B;--xl-soft:#173A29;--on-xl:#07140D;--blue:#86A8FF;--blue-soft:#1B2A52;--amber:#F0B955;--amber-soft:#3B2D10;--log-bg:#09100D;
+}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
-.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:var(--t-base)/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:4px}
-header.top{padding:26px 0 0;font-weight:700}
-header.top span{font-weight:400;color:var(--muted)}
-
-.hero{padding:48px 0 40px}
-h1{font:600 clamp(2.1rem,5.4vw,3.6rem)/1.08 var(--serif);margin:0 0 18px;max-width:18ch;letter-spacing:-.01em}
-.lede{font-size:1.12rem;color:var(--muted);max-width:58ch;margin:0 0 30px}
-
-/* the sheet: the one memorable element */
-.sheet{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.sheet-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;background:var(--xl);color:#fff}
-@media (prefers-color-scheme:dark){.sheet-bar{color:#07140D}}
-.sheet-bar b{font-weight:600;margin-right:auto}
-.sheet-bar small{opacity:.9}
-.btn{font:600 .92rem var(--sans);border:2px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:0 16px;min-height:40px;cursor:pointer}
-.btn.fill{background:#fff;color:#14201A;border-color:#fff}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.sheet-bar :focus-visible{outline-color:currentColor}
-.day{font:600 .8rem var(--mono);padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.24)}
-.form{border-top:1px solid var(--line);padding:14px 16px;background:var(--surface)}
-.fh{display:flex;justify-content:space-between;gap:6px 14px;flex-wrap:wrap;font-size:.88rem;color:var(--muted);margin-bottom:10px}
-.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.f{border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-height:52px}
-.f small{display:block;font-size:.72rem;color:var(--muted)}
-.f span{display:block;font:.82rem var(--mono);min-height:1.25em;overflow-wrap:anywhere}
-.f.on{background:var(--xl-soft);border-color:var(--xl)}
-.f.alt.on{background:var(--amber-soft);border-color:var(--amber)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:var(--s2);top:-4rem;background:var(--ink);color:var(--bg);padding:var(--s1) var(--s2);border-radius:6px;z-index:9;transition:top .15s}
+.skip:focus{top:var(--s2)}
+.top{padding:var(--s4) 0 0;font-weight:700}
+.top span{font-weight:400;color:var(--muted)}
+
+.hero{padding:var(--s5) 0 var(--s5)}
+h1{font:600 var(--t-hero)/1.06 var(--serif);margin:0 0 var(--s3);max-width:18ch;letter-spacing:-.015em;text-wrap:balance}
+.lede{font-size:var(--t-lg);line-height:1.5;color:var(--muted);max-width:58ch;margin:0 0 var(--s4)}
+p{margin:0 0 var(--s2);max-width:66ch}
+
+/* the demo: the one bold element */
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 2px rgb(0 0 0/.06)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:var(--s2) var(--s3);background:var(--xl);color:var(--on-xl)}
+.bar b{margin-right:auto;font-weight:600}
+.bar small{opacity:.9}
+.bar :focus-visible{outline-color:currentColor}
+.day{font:600 var(--t-sm) var(--mono);padding:3px 10px;border-radius:99px;background:rgb(255 255 255/.22)}
+.btn{font:600 .92rem var(--sans);border:2px solid currentColor;background:transparent;color:inherit;border-radius:6px;padding:0 var(--s3);min-height:44px;cursor:pointer;transition:transform .12s,background-color .15s,opacity .15s}
+.btn:hover:not(:disabled){background:rgb(255 255 255/.18)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.fill{background:var(--on-xl);color:var(--xl);border-color:var(--on-xl)}
+.btn.fill:hover:not(:disabled){background:var(--on-xl);opacity:.88}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
 .stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
-.stat{padding:12px 16px;border-right:1px solid var(--line)}
+.stat{padding:var(--s2) var(--s3);border-right:1px solid var(--line)}
 .stat:last-child{border-right:0}
-.stat b{display:block;font:600 1.5rem/1.1 var(--serif);color:var(--muted)}
-.stat span{font-size:.82rem;color:var(--muted)}
+.stat b{display:block;font:600 var(--t-lg)/1.1 var(--serif);color:var(--muted);transition:color .3s}
+.stat span{font-size:var(--t-sm);color:var(--muted)}
 .stat.on b{color:var(--xl)}
-td:first-child,th:first-child{position:sticky;left:0;background:var(--surface);box-shadow:1px 0 0 var(--line)}
-th:first-child{background:var(--head)}
-ol.flow li.live b{color:var(--xl)}
-ol.flow li.live::before{box-shadow:0 0 0 5px var(--xl-soft)}
+
 .scroller{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:760px;font:.9rem var(--mono)}
 th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap}
 th{background:var(--head);font-weight:600;color:var(--muted)}
+tbody th{background:var(--surface);color:var(--ink);font-weight:400}
+th:first-child{position:sticky;left:0;box-shadow:1px 0 0 var(--line)}
 th:last-child,td:last-child{border-right:0}
-tr:last-child td{border-bottom:0}
+tr:last-child>*{border-bottom:0}
+tbody tr{transition:background-color .25s}
+tbody tr.cur,tbody tr.cur th{background:var(--xl-soft)}
 td.empty{color:var(--line)}
 .pop{animation:pop .7s ease}
-@keyframes pop{0%{background:var(--xl-soft)}100%{background:transparent}}
+@keyframes pop{from{background:var(--xl-soft)}to{background:transparent}}
 .chip{display:inline-block;padding:2px 9px;border-radius:99px;font:600 .8rem var(--sans)}
-.chip.alt{background:var(--amber-soft);color:var(--amber)}
+.chip.alt,.chip.mid{background:var(--amber-soft);color:var(--amber)}
 .chip.def{background:var(--head);color:var(--muted)}
 .chip.sub{background:var(--blue-soft);color:var(--blue)}
-.chip.fin{background:var(--xl-soft);color:var(--done)}
-.chip.mid{background:var(--amber-soft);color:var(--amber)}
+.chip.fin{background:var(--xl-soft);color:var(--xl)}
 
-.log{background:var(--log-bg);color:var(--log-ink);font:.86rem/1.7 var(--mono);padding:14px 16px;min-height:150px;max-height:210px;overflow:auto;border-top:1px solid var(--line)}
+.console{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);border-top:1px solid var(--line)}
+.form{padding:var(--s3);border-right:1px solid var(--line)}
+.fh{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px var(--s3);font-size:var(--t-sm);color:var(--muted);margin-bottom:var(--s2)}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.f{border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-height:52px;transition:background-color .2s,border-color .2s}
+.f small{display:block;font-size:.72rem;color:var(--muted)}
+.f span{display:block;font:.8rem var(--mono);min-height:1.25em;overflow-wrap:anywhere}
+.f.on{background:var(--xl-soft);border-color:var(--xl)}
+.f.alt.on{background:var(--amber-soft);border-color:var(--amber)}
+.log{background:var(--log-bg);color:var(--log-ink);font:.84rem/1.7 var(--mono);padding:var(--s3);min-height:200px;max-height:320px;overflow:auto}
 .log div{white-space:pre-wrap}
-.log .d{color:var(--log-dim)} .log .a{color:#F0B955} .log .g{color:#6FD39A} .log .c{color:#8DB4FF}
-.note{font-size:.88rem;color:var(--muted);margin:10px 2px 0}
+.log .d{color:var(--log-dim)}.log .a{color:#F0B955}.log .g{color:#6FD39A}.log .c{color:#8DB4FF}
+.note{font-size:var(--t-sm);color:var(--muted);margin:var(--s2) 2px 0}
 
-section{padding:46px 0;border-top:1px solid var(--line)}
-h2{font:600 1.65rem/1.2 var(--serif);margin:0 0 18px}
-p{margin:0 0 14px;max-width:66ch}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
-.two div{border-left:3px solid var(--xl);padding-left:18px}
+main>section{padding:var(--s5) 0;border-top:1px solid var(--line)}
+h2{font:600 var(--t-xl)/1.2 var(--serif);margin:0 0 var(--s3);text-wrap:balance}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+.two>div{border-left:3px solid var(--xl);padding-left:var(--s3)}
 .two b{display:block;margin-bottom:4px}
-.beforeafter{margin-top:26px;display:flex;flex-wrap:wrap;gap:12px 28px;font-size:.98rem}
-.beforeafter span{color:var(--muted)} .beforeafter s{color:var(--muted)}
+.ba{margin-top:var(--s4);display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4)}
+.ba span,.ba s{color:var(--muted)}
 
-ol.flow{list-style:none;margin:0;padding:0;counter-reset:s;max-width:68ch}
-ol.flow li{counter-increment:s;position:relative;padding:0 0 22px 52px}
-ol.flow li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--xl);color:#fff;display:grid;place-items:center;font-weight:700}
-@media (prefers-color-scheme:dark){ol.flow li::before{color:#07140D}}
-ol.flow li::after{content:"";position:absolute;left:16px;top:40px;bottom:6px;width:2px;background:var(--line)}
-ol.flow li:last-child::after{display:none}
-ol.flow b{display:block}
-ol.flow span{color:var(--muted)}
+ol.flow{list-style:none;margin:0 0 var(--s3);padding:0;counter-reset:s;max-width:68ch}
+.flow li{counter-increment:s;position:relative;padding:0 0 var(--s3) 52px}
+.flow li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--xl);color:var(--on-xl);display:grid;place-items:center;font-weight:700;transition:box-shadow .3s}
+.flow li::after{content:"";position:absolute;left:16px;top:40px;bottom:6px;width:2px;background:var(--line)}
+.flow li:last-child::after{display:none}
+.flow b{display:block;transition:color .3s}
+.flow span{color:var(--muted)}
+.flow li.live b{color:var(--xl)}
+.flow li.live::before{box-shadow:0 0 0 5px var(--xl-soft)}
 
-.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.features div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px}
-.features h3{font:700 1.08rem var(--sans);margin:0 0 8px}
-.features p{color:var(--muted);font-size:.96rem;margin:0}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+.features>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s4) var(--s3)}
+.features.two-up{grid-template-columns:repeat(2,1fr)}
+h3{font:700 1.08rem/1.3 var(--sans);margin:0 0 var(--s1)}
+.features p{color:var(--muted);font-size:.96rem;line-height:1.55;margin:0}
+
+.acc{max-width:76ch;margin:var(--s3) 0}
+details{border-bottom:1px solid var(--line)}
+details:first-child{border-top:1px solid var(--line)}
+summary{cursor:pointer;font-weight:700;padding:var(--s2) 0;list-style:none;display:flex;justify-content:space-between;gap:var(--s2);transition:color .15s}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:400 1.4rem/1 var(--mono);color:var(--xl);transition:transform .2s}
+summary:hover{color:var(--xl)}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);padding-bottom:var(--s2);margin:0;max-width:none}
 .limits{max-width:66ch;padding-left:20px;margin:0}
-.limits li{margin-bottom:8px}\n.features h3{line-height:1.3}\n.features p{line-height:1.55}\nsection > p{margin-bottom:18px}
-footer{padding:34px 0 56px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
+.limits li{margin-bottom:var(--s1)}
+.stack{margin-top:var(--s3);color:var(--muted);font:.9rem var(--mono)}
+footer{padding:var(--s4) 0 var(--s5);border-top:1px solid var(--line);color:var(--muted);font-size:.92rem}
 footer p{max-width:72ch}
 
-@media (max-width:760px){.two,.features{grid-template-columns:1fr}.stat{padding:10px 12px}.fg{grid-template-columns:repeat(2,1fr)}.stat b{font-size:1.15rem}}
-@media (prefers-reduced-motion:reduce){.pop{animation:none}}
+@media (max-width:900px){.console{grid-template-columns:1fr}.form{border-right:0;border-bottom:1px solid var(--line)}.features{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.two,.features,.features.two-up{grid-template-columns:1fr}.fg{grid-template-columns:repeat(2,1fr)}.stat{padding:10px 12px}.stat b{font-size:1.1rem}.bar b{flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
 
-<!-- TODO: add a "View code" link to the public repo here once it exists -->
 <header class="top">TicketForge <span>by Vikas Singh</span></header>
 
-<main>
+<main id="main">
 <div class="hero">
   <h1>Watch an Excel sheet file its own Lenovo tickets.</h1>
   <p class="lede">Press the buttons below. This is TicketForge on five sample laptops: it fills the Lenovo form, writes each Case ID back into the row, and the next day pulls the repair status into the same sheet.</p>
 
-  <div class="sheet">
-    <div class="sheet-bar">
+  <div class="sheet" id="sheet">
+    <div class="bar">
       <b>hardware_tracker.xlsx</b>
       <small>sample data</small>
       <span class="day" id="day">Day 1</span>
-      <button class="btn fill" id="run">Run batch</button>
-      <button class="btn" id="next" disabled>Next day</button>
-      <button class="btn" id="reset">Reset</button>
+      <button class="btn fill" id="run" type="button">Run batch</button>
+      <button class="btn" id="next" type="button" disabled>Next day</button>
+      <button class="btn" id="reset" type="button">Reset</button>
     </div>
     <div class="stats">
       <div class="stat"><b id="s1">0 of 5</b><span>Tickets filed</span></div>
       <div class="stat"><b id="s2">0 of 5</b><span>Case IDs written back</span></div>
       <div class="stat"><b id="s3">0 of 5</b><span>Statuses synced</span></div>
     </div>
-    <div class="scroller">
-      <table aria-label="Sample hardware tracker">
-        <thead><tr><th>Serial</th><th>Issue</th><th>User is at</th><th>Dispatch</th><th>Case ID</th><th>Status</th></tr></thead>
+    <div class="scroller" tabindex="0" role="region" aria-label="Sample hardware tracker, scrollable">
+      <table>
+        <caption class="sr">Sample hardware tracker</caption>
+        <thead><tr><th scope="col">Serial</th><th scope="col">Issue</th><th scope="col">User is at</th><th scope="col">Dispatch</th><th scope="col">Case ID</th><th scope="col">Status</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
-    <div class="form" aria-hidden="true">
-      <div class="fh"><span id="fh"></span><span id="fc"></span></div>
-      <div class="fg" id="fg"></div>
+    <div class="console">
+      <div class="form" aria-hidden="true">
+        <div class="fh"><span id="fh"></span><span id="fc"></span></div>
+        <div class="fg" id="fg"></div>
+      </div>
+      <div class="log" id="log" role="log" aria-live="off" aria-label="Run log"><div class="d">Waiting. Press “Run batch” to create tickets.</div></div>
     </div>
-    <div class="log" id="log" role="log" aria-live="off"><div class="d">Waiting. Press “Run batch” to create tickets.</div></div>
   </div>
   <p class="sr" id="sr" role="status"></p>
   <p class="note">Everything on this page is sample data and runs in your browser. The real tool drives the Lenovo portal with Selenium.</p>
 </div>
 
-<section>
-  <h2>Why it exists</h2>
+<section aria-labelledby="why">
+  <h2 id="why">Why it exists</h2>
   <div class="two">
     <div><b>Creating tickets was typing</b>Faulty motherboards and power faults need a Lenovo warranty claim. Each claim meant 15+ fields by hand: serial number, issue, contact, dispatch address. Around 30 or more tickets a month.</div>
     <div><b>Tracking tickets was logging in</b>Every day, someone opened the portal to see whether the technician had visited and whether the part was changed. A wrong dispatch address sent the technician to the wrong place.</div>
   </div>
-  <div class="beforeafter"><span>Before: <s>15+ fields by hand</s> <s>daily portal login</s></span><span>After: one command to create, one command to sync</span></div>
+  <div class="ba"><span>Before: <s>15+ fields by hand</s> <s>daily portal login</s></span><span>After: one command to create, one command to sync</span></div>
 </section>
 
-<section>
-  <h2>What happens on each run</h2>
+<section aria-labelledby="run-h">
+  <h2 id="run-h">What happens on each run</h2>
   <ol class="flow">
     <li><b>Read the tracker</b><span>Serial number, issue, and dispatch location come from each Excel row.</span></li>
     <li><b>Log in to the portal</b><span>Selenium controls a real browser, clicking and typing like a person would.</span></li>
@@ -180,39 +205,38 @@ footer p{max-width:72ch}
   </ol>
 </section>
 
-<section>
-  <h2>Three things it handles</h2>
+<section aria-labelledby="three">
+  <h2 id="three">Three things it handles</h2>
   <div class="features">
     <div><h3>Bulk ingestion</h3><p>The whole list runs in one go instead of one ticket at a time.</p></div>
-    <div><h3>Dynamic routing</h3><p>Users at home or at a branch get an alternate dispatch address. Try it above: those rows and their address fields turn amber.</p></div>
+    <div><h3>Dynamic routing</h3><p>Users at home or at a branch get an alternate dispatch address, read from each row so nobody edits the form. Try it above: those rows and their address fields turn amber.</p></div>
     <div><h3>Next-day sync</h3><p>Status for every active ticket lands in Excel with no manual login.</p></div>
   </div>
 </section>
 
-<section>
-  <h2>Design choices</h2>
-  <div class="features">
+<section aria-labelledby="design">
+  <h2 id="design">Design choices</h2>
+  <div class="features two-up">
     <div><h3>Excel remains familiar</h3><p>Excel can remain the intake and export format, while a central database becomes the permanent record for assets, tickets, Case IDs and status history.</p></div>
     <div><h3>It drives the real portal</h3><p>Selenium operates the portal’s own pages, clicking and typing the way a person would, so nothing on the portal side has to change.</p></div>
-    <div><h3>Routing is decided per row</h3><p>Dispatch location is read from each row, so a user at home or a branch gets the right address without anyone editing the form.</p></div>
   </div>
 </section>
 
-<section>
-  <h2>What it will take to run this reliably at company scale</h2>
+<section aria-labelledby="scale">
+  <h2 id="scale">What it will take to run this reliably at company scale</h2>
   <p>These are the controls I recommend adding before a wider rollout. They are implementation commitments, not claims that every control is already present in the current demo.</p>
-  <div class="features">
-    <div><h3>1. Stop duplicate tickets</h3><p>Before submitting, the system will check the database for an existing open ticket using the asset serial number, issue category and a defined time window. Each request will also receive a unique idempotency key. If the same row is processed again, TicketForge will reuse the existing Case ID instead of creating another ticket. An operator can override the check with a recorded reason when a genuinely new case is required.</p></div>
-    <div><h3>2. Recover safely from portal errors</h3><p>Portal actions will have explicit timeouts, page and confirmation checks, and limited retries with increasing wait times. If submission times out after the portal may have accepted it, the job will first search for the resulting case before trying again. Unresolved jobs will move to an exception queue for review; the system will not blindly resubmit.</p></div>
-    <div><h3>3. Keep credentials out of files and code</h3><p>Portal credentials will be stored in an approved secrets vault or enterprise credential manager, not in Excel, source code or configuration files. Access will be restricted to the automation service account, secrets will be masked in logs, and rotation will follow company IT policy. MFA and portal terms will be respected; no attempt will be made to bypass security controls.</p></div>
-    <div><h3>4. Use a proper database</h3><p>PostgreSQL will hold the permanent records for assets, requests, tickets, Case IDs, status changes and job results. Excel will be used for controlled import/export only. Unique constraints and transactions will protect records from accidental duplication or partial updates, with scheduled backups and a tested restore process.</p></div>
-    <div><h3>5. Keep an audit trail</h3><p>Every run will record who or what started it, the asset reference, time, action, result, portal Case ID, retry count and any exception. Logs will be searchable and access-controlled, with sensitive fields and credentials excluded. Changes to ticket data and manual overrides will retain the user, timestamp and reason.</p></div>
-    <div><h3>6. Prove it in an authorized test environment</h3><p>The pilot will use a Lenovo-approved test account or designated low-risk test assets, with permission from the portal owner. We will demonstrate the complete flow: read an approved asset, check for duplicates, submit the request, capture the actual Case ID, store it in the database, and retrieve the real status. The demo will show timestamps, run logs and the resulting portal record. Sample data on this webpage is only a UI walkthrough, not proof of a live portal transaction.</p></div>
+  <div class="acc">
+    <details><summary>1. Stop duplicate tickets</summary><p>Before submitting, the system will check the database for an existing open ticket using the asset serial number, issue category and a defined time window. Each request will also receive a unique idempotency key. If the same row is processed again, TicketForge will reuse the existing Case ID instead of creating another ticket. An operator can override the check with a recorded reason when a genuinely new case is required.</p></details>
+    <details><summary>2. Recover safely from portal errors</summary><p>Portal actions will have explicit timeouts, page and confirmation checks, and limited retries with increasing wait times. If submission times out after the portal may have accepted it, the job will first search for the resulting case before trying again. Unresolved jobs will move to an exception queue for review; the system will not blindly resubmit.</p></details>
+    <details><summary>3. Keep credentials out of files and code</summary><p>Portal credentials will be stored in an approved secrets vault or enterprise credential manager, not in Excel, source code or configuration files. Access will be restricted to the automation service account, secrets will be masked in logs, and rotation will follow company IT policy. MFA and portal terms will be respected; no attempt will be made to bypass security controls.</p></details>
+    <details><summary>4. Use a proper database</summary><p>PostgreSQL will hold the permanent records for assets, requests, tickets, Case IDs, status changes and job results. Excel will be used for controlled import/export only. Unique constraints and transactions will protect records from accidental duplication or partial updates, with scheduled backups and a tested restore process.</p></details>
+    <details><summary>5. Keep an audit trail</summary><p>Every run will record who or what started it, the asset reference, time, action, result, portal Case ID, retry count and any exception. Logs will be searchable and access-controlled, with sensitive fields and credentials excluded. Changes to ticket data and manual overrides will retain the user, timestamp and reason.</p></details>
+    <details><summary>6. Prove it in an authorized test environment</summary><p>The pilot will use a Lenovo-approved test account or designated low-risk test assets, with permission from the portal owner. We will demonstrate the complete flow: read an approved asset, check for duplicates, submit the request, capture the actual Case ID, store it in the database, and retrieve the real status. The demo will show timestamps, run logs and the resulting portal record. Sample data on this webpage is only a UI walkthrough, not proof of a live portal transaction.</p></details>
   </div>
 </section>
 
-<section>
-  <h2>How I would deliver the changes</h2>
+<section aria-labelledby="deliver">
+  <h2 id="deliver">How I would deliver the changes</h2>
   <ol class="flow">
     <li><b>Foundation</b><span>Confirm the approved portal workflow and test access; define the ticket matching rules; create the database schema and service account.</span></li>
     <li><b>Reliability controls</b><span>Implement duplicate checks, safe retry and exception handling, secrets-vault integration, structured logs and audit history.</span></li>
@@ -222,13 +246,13 @@ footer p{max-width:72ch}
   <p><b>Acceptance criteria:</b> no duplicate submission during repeat-run tests; no blind retry after an uncertain submission; credentials absent from workbook, source and logs; every action traceable; and a successful, independently verified end-to-end test in the authorized environment.</p>
 </section>
 
-<section>
-  <h2>Limitations</h2>
+<section aria-labelledby="limits">
+  <h2 id="limits">Limitations</h2>
   <ul class="limits">
     <li>It depends on the portal’s page layout. If Lenovo changes the UI, the selectors need updating.</li>
     <li>It needs your own authorized portal account.</li>
   </ul>
-  <p style="margin-top:18px;color:var(--muted);font-family:var(--mono);font-size:.9rem">Python, Selenium, Excel</p>
+  <p class="stack">Python, Selenium, Excel</p>
 </section>
 </main>
 
@@ -238,91 +262,118 @@ footer p{max-width:72ch}
 </div>
 
 <script>
-(function(){
-  var DATA=[
+(() => {
+  "use strict";
+  const DATA = [
     {s:"PF-SAMPLE-01",i:"Motherboard failure",at:"Home",alt:true,id:"#4010892211",st:"Part replaced"},
     {s:"PF-SAMPLE-02",i:"Won’t power on",at:"Office",alt:false,id:"#4010892214",st:"Technician visited"},
     {s:"PF-SAMPLE-03",i:"Motherboard failure",at:"Branch",alt:true,id:"#4010892219",st:"Technician assigned"},
     {s:"PF-SAMPLE-04",i:"Power port fault",at:"Office",alt:false,id:"#4010892225",st:"Part replaced"},
     {s:"PF-SAMPLE-05",i:"Won’t power on",at:"Home",alt:true,id:"#4010892230",st:"Technician visited"}
   ];
-  var rows=document.getElementById("rows"),log=document.getElementById("log"),
-      runB=document.getElementById("run"),nextB=document.getElementById("next"),resetB=document.getElementById("reset");
-  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches, timers=[], busy=false;
-  var gap=reduce?0:640;
+  const $ = id => document.getElementById(id);
+  const rows = $("rows"), log = $("log"), runB = $("run"), nextB = $("next"), resetB = $("reset");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const gap = reduce ? 0 : 640;
+  let timers = [], busy = false, cnt = {f:0,w:0,s:0}, cells = [];
 
-  var cnt={f:0,w:0,s:0};
-  function live(n){[].forEach.call(document.querySelectorAll("ol.flow li"),function(li,i){li.classList.toggle("live",i===n)})}
-  function stat(id,n){var e=document.getElementById(id);e.textContent=n+" of "+DATA.length;e.parentNode.classList.toggle("on",n>0)}
-  function esc(t){return String(t).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
-  function draw(){
-    rows.innerHTML="";buildForm();
-    DATA.forEach(function(d,n){
-      var tr=document.createElement("tr");
-      tr.innerHTML="<td>"+esc(d.s)+"</td><td>"+esc(d.i)+"</td><td>"+esc(d.at)+"</td>"+
-        '<td class="empty" id="dp'+n+'">-</td><td class="empty" id="ci'+n+'">-</td><td class="empty" id="st'+n+'">-</td>';
-      rows.appendChild(tr);
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const clear = () => { timers.forEach(clearTimeout); timers = []; busy = false; };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const chip = (cls, text) => el("span", "chip " + cls, text);
+  const put = (td, content) => { td.className = "pop"; td.replaceChildren(content); };
+  const live = n => document.querySelectorAll("ol.flow")[0].querySelectorAll("li").forEach((li, i) => li.classList.toggle("live", i === n));
+  const mark = n => [...rows.children].forEach((tr, i) => tr.classList.toggle("cur", i === n));
+  const stat = (id, n) => { const e = $(id); e.textContent = n + " of " + DATA.length; e.parentNode.classList.toggle("on", n > 0); };
+  const line = (t, c) => { log.appendChild(el("div", c, t)); log.scrollTop = log.scrollHeight; };
+  const announce = t => { $("sr").textContent = t; };
+  const chain = (steps, done) => { let t = 0; steps.forEach(f => { t += gap; later(f, t); }); later(done, t + gap); };
+
+  const fields = d => [["Serial number",d.s],["Product","Laptop"],["Issue",d.i],["Severity","System down"],["Contact name","Sample User"],["Phone","+00 000 000 000"],["Email","user@example.com"],["Company","Sample Co."],["Country","Sample Country"],["Support location",d.alt?"Alternate Site":"Default Site"],["Dispatch address",d.alt?"Alternate address":"Registered office"],["City","Sample City"],["Postal code","000000"],["Service type","On-site repair"],["Warranty","In warranty"],["Preferred slot","Next business day"]];
+
+  function buildForm() {
+    const g = $("fg"); g.replaceChildren();
+    fields(DATA[0]).forEach(x => { const e = el("div", "f"); e.append(el("small", "", x[0]), el("span")); g.append(e); });
+    $("fh").textContent = "Lenovo Service Portal, sample form. Waiting for the first ticket.";
+    $("fc").textContent = "0 of " + g.children.length + " fields filled";
+  }
+  function draw() {
+    rows.replaceChildren(); cells = []; buildForm();
+    DATA.forEach(d => {
+      const tr = el("tr"), th = el("th", "", d.s); th.scope = "row";
+      tr.append(th, el("td", "", d.i), el("td", "", d.at));
+      cells.push([0,1,2].map(() => { const td = el("td", "empty", "-"); tr.append(td); return td; }));
+      rows.append(tr);
     });
   }
-  function fields(d){return [["Serial number",d.s],["Product","Laptop"],["Issue",d.i],["Severity","System down"],["Contact name","Sample User"],["Phone","+00 000 000 000"],["Email","user@example.com"],["Company","Sample Co."],["Country","Sample Country"],["Support location",d.alt?"Alternate Site":"Default Site"],["Dispatch address",d.alt?"Alternate address":"Registered office"],["City","Sample City"],["Postal code","000000"],["Service type","On-site repair"],["Warranty","In warranty"],["Preferred slot","Next business day"]]}
-  function buildForm(){
-    var g=document.getElementById("fg");g.innerHTML="";
-    fields(DATA[0]).forEach(function(x){var e=document.createElement("div");e.className="f";e.innerHTML="<small>"+x[0]+"</small><span></span>";g.appendChild(e)});
-    document.getElementById("fh").textContent="Lenovo Service Portal, sample form. Waiting for the first ticket.";
-    document.getElementById("fc").textContent="0 of "+g.children.length+" fields filled";
-  }
-  function fillForm(d,n){
-    var els=document.getElementById("fg").children,f=fields(d),k=0,fc=document.getElementById("fc");
-    document.getElementById("fh").textContent="Filling ticket "+(n+1)+" of "+DATA.length;
-    [].forEach.call(els,function(e){e.className="f";e.lastChild.textContent=""});
-    fc.textContent="0 of "+f.length+" fields filled";
-    f.forEach(function(x,i){
-      var go=function(){var e=els[i];e.className="f on"+(d.alt&&(i===9||i===10)?" alt":"");e.lastChild.textContent=x[1];fc.textContent=(++k)+" of "+f.length+" fields filled"};
-      if(reduce)go();else later(go,i*30);
+  function fillForm(d, n) {
+    const els = $("fg").children, f = fields(d), fc = $("fc"); let k = 0;
+    $("fh").textContent = "Filling ticket " + (n + 1) + " of " + DATA.length;
+    [...els].forEach(e => { e.className = "f"; e.lastChild.textContent = ""; });
+    fc.textContent = "0 of " + f.length + " fields filled";
+    f.forEach((x, i) => {
+      const go = () => { els[i].className = "f on" + (d.alt && (i === 9 || i === 10) ? " alt" : ""); els[i].lastChild.textContent = x[1]; fc.textContent = (++k) + " of " + f.length + " fields filled"; };
+      reduce ? go() : later(go, i * 30);
     });
-  }
-  function put(id,html){var c=document.getElementById(id);c.className="pop";c.innerHTML=html}
-  function line(t,c){var d=document.createElement("div");if(c)d.className=c;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight}
-  function clear(){timers.forEach(clearTimeout);timers=[];busy=false}
-  function later(fn,ms){timers.push(setTimeout(fn,ms))}
-  function chain(steps,done){
-    var t=0;steps.forEach(function(f){t+=gap;later(f,t)});later(done,t+gap);
   }
 
-  function reset(){
-    clear();draw();cnt={f:0,w:0,s:0};stat("s1",0);stat("s2",0);stat("s3",0);live(-1);document.getElementById("day").textContent="Day 1";log.innerHTML="";line("Waiting. Press “Run batch” to create tickets.","d");
-    runB.disabled=false;nextB.disabled=true;
+  function reset() {
+    clear(); draw(); cnt = {f:0,w:0,s:0};
+    ["s1","s2","s3"].forEach(id => stat(id, 0));
+    live(-1); mark(-1); $("day").textContent = "Day 1"; announce("");
+    log.replaceChildren(); line("Waiting. Press “Run batch” to create tickets.", "d");
+    runB.disabled = false; nextB.disabled = true;
   }
-  function runBatch(){
-    if(busy)return;busy=true;runB.disabled=true;nextB.disabled=true;
-    log.innerHTML="";line("$ python ticketforge.py --batch hardware_tracker.xlsx","c");
-    var steps=[function(){live(0);line("Reading hardware_tracker.xlsx: "+DATA.length+" rows","d")},function(){live(1);line("Logging in to the Lenovo Service Portal...","d")}];
-    DATA.forEach(function(d,n){
-      steps.push(function(){
-        line("Processing "+(n+1)+"/"+DATA.length,"d");fillForm(d,n);
-        line("  Support Location: "+(d.alt?"Alternate Site":"Default Site"),d.alt?"a":"");
-        put("dp"+n,'<span class="chip '+(d.alt?"alt":"def")+'">'+(d.alt?"Alternate Site":"Default Site")+"</span>");live(2);stat("s1",++cnt.f);
+  function runBatch() {
+    if (busy) return;
+    busy = true; runB.disabled = true; nextB.disabled = true;
+    log.replaceChildren(); line("$ python ticketforge.py --batch hardware_tracker.xlsx", "c");
+    const steps = [
+      () => { live(0); line("Reading hardware_tracker.xlsx: " + DATA.length + " rows", "d"); },
+      () => { live(1); line("Logging in to the Lenovo Service Portal...", "d"); }
+    ];
+    DATA.forEach((d, n) => {
+      steps.push(() => {
+        mark(n); line("Processing " + (n + 1) + "/" + DATA.length, "d"); fillForm(d, n);
+        line("  Support Location: " + (d.alt ? "Alternate Site" : "Default Site"), d.alt ? "a" : "");
+        put(cells[n][0], chip(d.alt ? "alt" : "def", d.alt ? "Alternate Site" : "Default Site"));
+        live(2); stat("s1", ++cnt.f);
       });
-      steps.push(function(){
-        line("  Case ID "+d.id+" written to Excel","g");document.getElementById("fh").textContent="Ticket "+(n+1)+" submitted. Lenovo returned "+d.id;
-        put("ci"+n,esc(d.id));put("st"+n,'<span class="chip sub">Submitted</span>');live(3);stat("s2",++cnt.w);
+      steps.push(() => {
+        line("  Case ID " + d.id + " written to Excel", "g");
+        $("fh").textContent = "Ticket " + (n + 1) + " submitted. Lenovo returned " + d.id;
+        put(cells[n][1], d.id); put(cells[n][2], chip("sub", "Submitted"));
+        live(3); stat("s2", ++cnt.w);
       });
     });
-    chain(steps,function(){line("Done. "+DATA.length+" tickets created.","g");live(-1);document.getElementById("sr").textContent=DATA.length+" sample tickets created and Case IDs written to the sheet.";busy=false;nextB.disabled=false});
+    chain(steps, () => {
+      line("Done. " + DATA.length + " tickets created.", "g"); live(-1); mark(-1);
+      announce(DATA.length + " sample tickets created and Case IDs written to the sheet.");
+      busy = false; nextB.disabled = false; nextB.focus();
+    });
   }
-  function nextDay(){
-    if(busy)return;busy=true;nextB.disabled=true;
-    line("\u00a0");document.getElementById("day").textContent="Day 2";live(4);document.getElementById("fh").textContent="Next day: the portal is only read, never filled. Statuses go straight to the sheet.";document.getElementById("fc").textContent="";line("$ python ticketforge.py --check-status","c");line("Checking "+DATA.length+" active tickets...","d");
-    var steps=DATA.map(function(d,n){return function(){
-      var fin=d.st==="Part replaced";
-      put("st"+n,'<span class="chip '+(fin?"fin":"mid")+'">'+esc(d.st)+"</span>");
-      line("  "+d.id+": "+d.st);stat("s3",++cnt.s);
-    }});
-    chain(steps,function(){line(DATA.length+" active tickets synced.","g");live(-1);document.getElementById("sr").textContent=DATA.length+" ticket statuses synced to the sheet.";busy=false});
+  function nextDay() {
+    if (busy) return;
+    busy = true; nextB.disabled = true;
+    line("\u00a0"); $("day").textContent = "Day 2"; live(4);
+    $("fh").textContent = "Next day: the portal is only read, never filled. Statuses go straight to the sheet.";
+    $("fc").textContent = "";
+    line("$ python ticketforge.py --check-status", "c"); line("Checking " + DATA.length + " active tickets...", "d");
+    const steps = DATA.map((d, n) => () => {
+      mark(n);
+      const fin = d.st === "Part replaced";
+      put(cells[n][2], chip(fin ? "fin" : "mid", d.st));
+      line("  " + d.id + ": " + d.st); stat("s3", ++cnt.s);
+    });
+    chain(steps, () => {
+      line(DATA.length + " active tickets synced.", "g"); live(-1); mark(-1);
+      announce(DATA.length + " ticket statuses synced to the sheet."); busy = false;
+    });
   }
-  runB.addEventListener("click",runBatch);
-  nextB.addEventListener("click",nextDay);
-  resetB.addEventListener("click",reset);
+
+  runB.addEventListener("click", runBatch);
+  nextB.addEventListener("click", nextDay);
+  resetB.addEventListener("click", reset);
   draw();
 })();
 </script>
